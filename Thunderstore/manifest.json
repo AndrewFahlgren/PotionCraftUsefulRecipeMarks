@@ -1,0 +1,10 @@
+﻿{
+  "name": "Useful_Recipe_Marks",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks",
+  "description": "A mod that makes the recipe marks on the right recipe page useful!",
+  "dependencies": [
+    "BepInEx-BepInExPack_PotionCraft-5.4.18"
+  ]
+
+}
