@@ -14,13 +14,13 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches
 {
     public class LoadBookmarkGroupingDataFromSaveFilePatch
     { 
-        [HarmonyPatch(typeof(SaveLoadManager), "LoadSelectedState")]
-        public class SaveLoadManager_LoadSelectedState
-        {
-            static bool Prefix(Type type)
-            {
-                return Ex.RunSafe(() => SaveLoadService.RetreiveStoredBookmarkGroups(type));
-            }
-        }
+        //[HarmonyPatch(typeof(SaveLoadManager), "LoadSelectedState")]
+        //public class SaveLoadManager_LoadSelectedState
+        //{
+        //    static bool Prefix(Type type)
+        //    {
+        //        return Ex.RunSafe(() => SaveLoadService.RetreiveStoredBookmarkGroups(type));
+        //    }
+        //}
     }
 }

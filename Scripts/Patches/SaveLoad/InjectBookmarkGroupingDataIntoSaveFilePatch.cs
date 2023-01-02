@@ -10,13 +10,13 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches
 {
     public class InjectBookmarkGroupingDataIntoSaveFilePatch
     { 
-        [HarmonyPatch(typeof(SavedState), "ToJson")]
-        public class SavedState_ToJson
-        {
-            static void Postfix(ref string __result)
-            {
-                SaveLoadService.StoreBookmarkGroups(ref __result);
-            }
-        }
+        //[HarmonyPatch(typeof(SavedState), "ToJson")]
+        //public class SavedState_ToJson
+        //{
+        //    static void Postfix(ref string __result)
+        //    {
+        //        SaveLoadService.StoreBookmarkGroups(ref __result);
+        //    }
+        //}
     }
 }

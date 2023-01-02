@@ -7,13 +7,13 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches
 {
     public class ClearFileSpecificDataOnFileLoadPatch
     {
-        [HarmonyPatch(typeof(SaveLoadManager), "LoadFile")]
-        public class SaveLoadManager_LoadFile
-        {
-            static bool Prefix()
-            {
-                return Ex.RunSafe(() => SaveLoadService.ClearFileSpecificDataOnFileLoad());
-            }
-        }
+        //[HarmonyPatch(typeof(SaveLoadManager), "LoadFile")]
+        //public class SaveLoadManager_LoadFile
+        //{
+        //    static bool Prefix()
+        //    {
+        //        return Ex.RunSafe(() => SaveLoadService.ClearFileSpecificDataOnFileLoad());
+        //    }
+        //}
     }
 }

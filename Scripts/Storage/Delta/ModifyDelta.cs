@@ -26,21 +26,21 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta
             }
 
             //Handle the null case outside of the switch statement;
-            if (NewValue == null) return delta.NewValue == null;
+            if (NewValue == null || delta.NewValue == null) return NewValue == null && delta.NewValue == null;
 
             return delta.NewValue switch
             {
                 string otherValue => 
-                    string.Equals(NewValue as string, otherValue, StringComparison.OrdinalIgnoreCase),
+                    string.Equals(NewValue as string, otherValue),
                 List<Vector3> otherValue => 
                     (NewValue as List<Vector3>)?.SequenceEqual(otherValue) ?? otherValue == null,
-                _ => !EqualityComparer<T>.Default.Equals(NewValue, delta.NewValue),
+                _ => EqualityComparer<T>.Default.Equals(NewValue, delta.NewValue),
             };
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(base.GetHashCode(), NewValue.GetHashCode());
+            return HashCode.Combine(base.GetHashCode(), NewValue?.GetHashCode() ?? 0);
         }
     }
 }

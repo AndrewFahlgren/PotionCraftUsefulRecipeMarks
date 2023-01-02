@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta
@@ -16,12 +17,14 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta
             {
                 throw new ArgumentException("Deltas with the same property enum must be of the same type!");
             }
-            return AddDeltas.Count == delta.AddDeltas.Count;
+            return AddDeltas.SequenceEqual(delta.AddDeltas);
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(base.GetHashCode(), AddDeltas.Count);
+            var hashCode = HashCode.Combine(base.GetHashCode(), AddDeltas.Count);
+            AddDeltas.ForEach(delta => hashCode = HashCode.Combine(hashCode, delta.GetHashCode()));
+            return hashCode;
         }
     }
 }

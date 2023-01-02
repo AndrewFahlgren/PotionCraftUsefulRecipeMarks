@@ -10,11 +10,15 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta
 
         public static bool operator ==(BaseDelta obj1, BaseDelta obj2)
         {
+            if (obj1 is null || obj2 is null) 
+                return obj1 is null && obj2 is null;
             return obj1.Equals(obj2);
         }
 
         public static bool operator !=(BaseDelta obj1, BaseDelta obj2)
         {
+            if (obj1 is null || obj2 is null)
+                return obj1 is not null || obj2 is not null;
             return !obj1.Equals(obj2);
         }
 
