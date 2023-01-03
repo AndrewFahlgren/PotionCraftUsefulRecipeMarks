@@ -7,14 +7,14 @@ using static PotionCraft.SaveLoadSystem.ProgressState;
 
 namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
 {
-    public class SetupInitialInfo
+    public class SetupInitialInfoPatch
     {
         [HarmonyPatch(typeof(SerializedPotionFromPanel), "ApplyPotionToCurrentPotion")]
         public class SerializedPotionFromPanel_ApplyPotionToCurrentPotion
         {
             static void Postfix()
             {
-                Ex.RunSafe(() => DeltaService.SetupInitialInfo());
+                Ex.RunSafe(() => DeltaRecordingService.SetupInitialInfo());
             }
         }
     }

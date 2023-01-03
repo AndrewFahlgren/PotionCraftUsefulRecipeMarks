@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using PotionCraft.ManagersSystem.Potion;
 using PotionCraft.ScriptableObjects;
 using PotionCraft.ScriptableObjects.Potion;
 using PotionCraft.ScriptableObjects.Salts;
@@ -11,23 +12,32 @@ using static PotionCraft.ManagersSystem.Potion.PotionManager;
 
 namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
 {
-    public class RecordRecipeMarks
+    public class RecordRecipeMarksPatch
     {
-        [HarmonyPatch(typeof(RecipeMarksSubManager), "AddStringMark")]
-        public class RecipeMarksSubManager_AddStringMark
+        [HarmonyPatch(typeof(RecipeMarksSubManager), "AddLadleMark")]
+        public class RecipeMarksSubManager_AddLadleMark
         {
             static void Postfix()
             {
-                Ex.RunSafe(() => DeltaService.RecordRecipeMarkInfo());
+                Ex.RunSafe(() => DeltaRecordingService.RecordRecipeMarkInfo());
             }
         }
 
-        [HarmonyPatch(typeof(RecipeMarksSubManager), "AddFloatMark")]
-        public class RecipeMarksSubManager_AddFloatMark
+        [HarmonyPatch(typeof(RecipeMarksSubManager), "AddSpoonMark")]
+        public class RecipeMarksSubManager_AddSpoonMark
         {
             static void Postfix()
             {
-                Ex.RunSafe(() => DeltaService.RecordRecipeMarkInfo());
+                Ex.RunSafe(() => DeltaRecordingService.RecordRecipeMarkInfo());
+            }
+        }
+
+        [HarmonyPatch(typeof(PotionManager), "ApplyEffectToPotion")]
+        public class PotionManager_ApplyEffectToPotion
+        {
+            static void Postfix()
+            {
+                Ex.RunSafe(() => DeltaRecordingService.RecordRecipeMarkInfo());
             }
         }
 
@@ -45,7 +55,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
         {
             static void Postfix()
             {
-                Ex.RunSafe(() => DeltaService.RecordRecipeMarkInfo());
+                Ex.RunSafe(() => DeltaRecordingService.RecordRecipeMarkInfo());
             }
         }
 
@@ -53,7 +63,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
         {
             //Potion bases and salt are handled differently
             if (componentObject is PotionBase || componentObject is Salt) return;
-            DeltaService.RecordRecipeMarkInfo();
+            DeltaRecordingService.RecordRecipeMarkInfo();
         }
     }
 }

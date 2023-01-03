@@ -16,11 +16,14 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
 
         public static string StateJsonString;
 
+        public static bool AddedListeners;
+
         public static Dictionary<int, RecipeMarkInfo> CurrentPotionRecipeMarkInfos = new();
         public static Dictionary<DeltaProperty, BaseDelta> CurrentPotionState = new();
         public static RecipeMarkInfo CurrentRecipeMarkInfo = new();
 
         public static Dictionary<int, Dictionary<int, RecipeMarkInfo>> RecipeMarkInfos = new();
+
 
         public class SavedStaticStorage
         {

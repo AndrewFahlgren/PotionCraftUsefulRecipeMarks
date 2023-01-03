@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using PotionCraft.ManagersSystem;
 using PotionCraft.SaveFileSystem;
 using PotionCraft.SaveLoadSystem;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage;
@@ -16,6 +17,18 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
     /// </summary>
     public static class SaveLoadService
     {
+
+
+        public static void SetupListeners()
+        {
+            if (!StaticStorage.AddedListeners)
+            {
+                StaticStorage.AddedListeners = true;
+                Managers.Potion.gameObject.AddComponent<UsefulRecipeMarksManager>();
+            }
+        }
+
+
         ///// <summary>
         ///// Stores bookmark groups dictionary at the end of the save file with a custom field name
         ///// </summary>

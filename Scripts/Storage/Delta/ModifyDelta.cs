@@ -22,7 +22,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta
             //Check to make sure these ModifyDeltas are of the same type
             if (obj is not ModifyDelta<T> delta)
             {
-                throw new ArgumentException("Deltas with the same property enum must be of the same type!");
+                return false;
             }
 
             //Handle the null case outside of the switch statement;

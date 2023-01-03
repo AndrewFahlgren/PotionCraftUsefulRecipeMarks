@@ -2,6 +2,7 @@
 using PotionCraft.ManagersSystem;
 using PotionCraft.ObjectBased.UIElements.Bookmarks;
 using PotionCraftUsefulRecipeMarks.Scripts.Services;
+using PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,6 +12,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
 {
     public class UsefulRecipeMarksManager : MonoBehaviour
     {
+        public Dictionary<int, RecipeMarkInfo> CurrentPotionRecipeMarkInfos => StaticStorage.CurrentPotionRecipeMarkInfos;
+        public Dictionary<DeltaProperty, BaseDelta> CurrentPotionState => StaticStorage.CurrentPotionState;
+        public RecipeMarkInfo CurrentRecipeMarkInfo => StaticStorage.CurrentRecipeMarkInfo;
+        public Dictionary<int, Dictionary<int, RecipeMarkInfo>> RecipeMarkInfos => StaticStorage.RecipeMarkInfos;
+
         void Update()
         {
             //if (StaticStorage.HotkeyDown == null || StaticStorage.HotkeyUp == null) return;

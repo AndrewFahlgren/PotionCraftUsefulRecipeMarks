@@ -15,7 +15,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta
             if (!baseEqual) return false;
             if (obj is not ListDelta delta)
             {
-                throw new ArgumentException("Deltas with the same property enum must be of the same type!");
+                return false;
             }
             return AddDeltas.SequenceEqual(delta.AddDeltas);
         }
