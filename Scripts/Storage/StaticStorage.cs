@@ -20,10 +20,12 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
 
         public static Dictionary<int, RecipeMarkInfo> CurrentPotionRecipeMarkInfos = new();
         public static Dictionary<DeltaProperty, BaseDelta> CurrentPotionState = new();
-        public static RecipeMarkInfo CurrentRecipeMarkInfo = new();
+        public static RecipeMarkInfo CurrentRecipeMarkInfo;
+
+        public static Dictionary<DeltaProperty, BaseDelta> SelectedRecipePotionState;
+        public static int SelectedRecipeMarkIndex;
 
         public static Dictionary<int, Dictionary<int, RecipeMarkInfo>> RecipeMarkInfos = new();
-
 
         public class SavedStaticStorage
         {

@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using PotionCraft.ManagersSystem;
 using PotionCraft.ObjectBased.Potion;
 using PotionCraft.ObjectBased.RecipeMap.Path;
+using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraft.ScriptableObjects.Potion;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta;
@@ -10,11 +11,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static PotionCraft.SaveLoadSystem.ProgressState;
 
 namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 {
     public static class DeltaRecordingService
     {
+        public const string VoidSaltName = "Void Salt";
         private static SerializedRecipeMark.Type? LastRecipeMarkType;
 
         public static void RecordRecipeMarkInfo()
@@ -24,6 +27,44 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             if (!Managers.Potion?.potionCraftPanel?.IsPotionBrewingStarted() ?? false) return;
             RecordRecipeMarkInfo(Managers.Potion.recipeMarks.GetMarksList().LastOrDefault());
         }
+
+        public static void SetupInitialInfoForRecipe(RecipeBookRightPageContent rightPageContent)
+        {
+            var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
+            if (!StaticStorage.RecipeMarkInfos.TryGetValue(recipeIndex, out var recipeMarkInfos))
+            {
+                SetupInitialInfo();
+                //Add the old serialized path for this pre mod recipe
+                StaticStorage.CurrentPotionRecipeMarkInfos[0].Deltas.Add(new ModifyDelta<SerializedPath>
+                {
+                    Property = DeltaProperty.OldSerializedPath,
+                    NewValue = rightPageContent.currentPotion.potionFromPanel.serializedPath
+                });
+                //Mark each pre mod fixed hint as an old fixed hint
+                var currentPotionStateFixedHintDeltas = ((ListDelta)StaticStorage.CurrentPotionState[DeltaProperty.FixedHints]).AddDeltas;
+                var recipeMarkDeltaFixedHintDeltas = ((ListDelta)StaticStorage.CurrentPotionRecipeMarkInfos[0].Deltas.First(d => d.Property == DeltaProperty.FixedHints)).AddDeltas;
+                currentPotionStateFixedHintDeltas.Concat(recipeMarkDeltaFixedHintDeltas).ToList().ForEach(fixedHintDelta =>
+                {
+                    fixedHintDelta.Deltas.Add(new ModifyDelta<bool>
+                    {
+                        Property = DeltaProperty.IsOldFixedHint,
+                        NewValue = true
+                    });
+                });
+                return;
+            }
+
+            var recipeMarkIndex = StaticStorage.SelectedRecipeMarkIndex;
+            StaticStorage.CurrentPotionRecipeMarkInfos = recipeMarkInfos.Count > recipeMarkIndex 
+                                                            ? recipeMarkInfos.Take(recipeMarkIndex + 1).ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+                                                            : recipeMarkInfos;
+
+            if (StaticStorage.SelectedRecipePotionState != null)
+            {
+                StaticStorage.CurrentPotionState = StaticStorage.SelectedRecipePotionState;
+            }
+        }
+
 
         public static bool CommitRecipeMarkInfoForSavedRecipe()
         {
@@ -46,10 +87,13 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             SaveLoadService.SetupListeners(); //TODO move to a more appropriate spot
             StaticStorage.CurrentPotionState = new();
             SetupCurrentPotionState(false);
-            StaticStorage.CurrentPotionRecipeMarkInfos[0] = new RecipeMarkInfo
+            StaticStorage.CurrentPotionRecipeMarkInfos = new Dictionary<int, RecipeMarkInfo>
             {
-                Index = 0,
-                Deltas = StaticStorage.CurrentPotionState.Values.ToList()
+                [0] = new RecipeMarkInfo
+                {
+                    Index = 0,
+                    Deltas = StaticStorage.CurrentPotionState.Values.ToList()
+                }
             };
         }
 
@@ -97,7 +141,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     RecordUsedComponentInfo(recipeMark.stringValue);
 
                     //Void salt requires a special case when it fully deletes a fixed path from the end.
-                    if (recipeMark.stringValue == "Void Salt")
+                    if (recipeMark.stringValue == VoidSaltName)
                     {
                         HandleDeletedFixedHintFromVoidSalt();
                         RecordEndPathHintInfo();
@@ -166,16 +210,16 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             RecordProperty(DeltaProperty.PathDeletedSegments);
 
             var fixedHintsList = (ListDelta)StaticStorage.CurrentPotionState[DeltaProperty.FixedHints];
-            var firstPathHint = fixedHintsList.AddDeltas.FirstOrDefault();
+           // var firstPathHint = fixedHintsList.AddDeltas.FirstOrDefault();
             if (Managers.RecipeMap.path.fixedPathHints.Count < fixedHintsList.AddDeltas.Count)
             {
-                var countDifference = fixedHintsList.AddDeltas.Count - Managers.RecipeMap.path.fixedPathHints.Count;
+                //var countDifference = fixedHintsList.AddDeltas.Count - Managers.RecipeMap.path.fixedPathHints.Count;
                 StaticStorage.CurrentRecipeMarkInfo.Deltas.Add(GetBaseProperty(DeltaProperty.PathFixedHintsCount));
-                firstPathHint = fixedHintsList.AddDeltas.Skip(countDifference).FirstOrDefault();
+                //firstPathHint = fixedHintsList.AddDeltas.Skip(countDifference).FirstOrDefault();
             }
 
-            if (firstPathHint == null) return;
-            RecordListObjectInfo(DeltaProperty.FixedHints, Managers.RecipeMap.path.fixedPathHints.FirstOrDefault(), firstPathHint.Index);
+            //if (firstPathHint == null) return;
+            RecordListObjectInfo(DeltaProperty.FixedHints, Managers.RecipeMap.path.fixedPathHints.FirstOrDefault(), 0, fixedHintsList.AddDeltas.Count - Managers.RecipeMap.path.fixedPathHints.Count);
         }
 
         private static void RecordEffectInfo()
@@ -196,7 +240,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var pathAddedFixedHints = (ModifyDelta<int>)StaticStorage.CurrentPotionState[DeltaProperty.PathAddedFixedHints];
             pathAddedFixedHints.NewValue++;
             //Record new fixed hint
-            RecordNewListAddInfo(DeltaProperty.FixedHints, Managers.RecipeMap.path.fixedPathHints, pathAddedFixedHints.NewValue);
+            RecordNewListAddInfo(DeltaProperty.FixedHints, Managers.RecipeMap.path.fixedPathHints);
             //Record the change to the path added fixed hints property
             StaticStorage.CurrentRecipeMarkInfo.Deltas.Add(GetBaseProperty(DeltaProperty.PathAddedFixedHints));
             //Record the change to the fixed hints count property (this isn't really nessesary since the list add contains the index but its better to be consistent)
@@ -212,7 +256,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var lastPathHint = fixedHintsList.AddDeltas.LastOrDefault();
             if (lastPathHint == null) return;
             var lastPathHintIndex = (ModifyDelta<int>)StaticStorage.CurrentPotionState[DeltaProperty.PathAddedFixedHints];
-            RecordNewListAddInfo(DeltaProperty.FixedHints, Managers.RecipeMap.path.fixedPathHints, lastPathHintIndex.NewValue);
+            RecordNewListAddInfo(DeltaProperty.FixedHints, Managers.RecipeMap.path.fixedPathHints, lastPathHintIndex.NewValue - 1);
         }
 
         private static void HandleDeletedFixedHintFromVoidSalt()
@@ -249,14 +293,18 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 throw new InvalidOperationException($"RecordNewListAddInfo should only be called when a new item is added. No {property} found!");
             }
 
-            RecordListObjectInfo(property, lastItem, indexOverride == -1 ? sourceList.Count : indexOverride);
+            RecordListObjectInfo(property, lastItem, indexOverride == -1 ? sourceList.Count - 1 : indexOverride);
         }
 
-        private static void RecordListObjectInfo<T>(DeltaProperty property, T sourceAdded, int index)
+        private static void RecordListObjectInfo<T>(DeltaProperty property, T sourceAdded, int index, int addDeltaIndex = -1)
         {
             var potionStateList = StaticStorage.CurrentPotionState[property] as ListDelta;
             var newAddDelta = GetBaseAddDelta(sourceAdded, index);
-            var lastAddedDelta = potionStateList.AddDeltas.Count > index ? potionStateList.AddDeltas[index] : null;
+            if (addDeltaIndex == -1)
+            {
+                addDeltaIndex = index;
+            }
+            var lastAddedDelta = potionStateList.AddDeltas.Count > addDeltaIndex ? potionStateList.AddDeltas[addDeltaIndex] : null;
 
             //Check to see if anything has actually changed
             if (lastAddedDelta != null && lastAddedDelta == newAddDelta)
@@ -350,7 +398,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 PotionUsedComponent => 
                     new List<DeltaProperty> { DeltaProperty.UsedComponent_Ammount },
                 FixedHint => 
-                    new List<DeltaProperty> { DeltaProperty.FixedHint_IngredientName, DeltaProperty.FixedHint_GrindPercent, DeltaProperty.FixedHint_Length, DeltaProperty.FixedHint_ConnectionPoint },
+                    new List<DeltaProperty> 
+                    { 
+                        DeltaProperty.FixedHint_Length, 
+                        DeltaProperty.FixedHint_ConnectionPoint
+                    },
                 _ => throw new ArgumentException($"Object of type: {obj.GetType()} is not a valid list add object!"),
             };
             return objectProperties.Select(p => GetListObjectProperty(p, obj)).ToList();
@@ -365,20 +417,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     Property = DeltaProperty.UsedComponent_Ammount,
                     NewValue = ((PotionUsedComponent)obj).amount
                 },
-                DeltaProperty.FixedHint_IngredientName => new ModifyDelta<string>
-                {
-                    Property = DeltaProperty.FixedHint_IngredientName,
-                    NewValue = GetIngredientMarkForFixedHint((FixedHint)obj).stringValue
-                },
-                DeltaProperty.FixedHint_GrindPercent => new ModifyDelta<float>
-                {
-                    Property = DeltaProperty.FixedHint_GrindPercent,
-                    NewValue = GetIngredientMarkForFixedHint((FixedHint)obj).floatValue
-                },
                 DeltaProperty.FixedHint_ConnectionPoint => new ModifyDelta<Vector2> //TODO switch to tuples here to save storage space
                 {
                     Property = DeltaProperty.FixedHint_ConnectionPoint,
-                    NewValue = ((FixedHint)obj).evenlySpacedPointsFixedGraphics.points.First()
+                    NewValue = GetConnectionPointForFixedHint((FixedHint)obj)
                 },
                 DeltaProperty.FixedHint_Length => new ModifyDelta<float>
                 {
@@ -387,6 +429,51 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 },
                 _ => throw new ArgumentException($"Property: {property} is not a list object property!"),
             };
+        }
+
+        private static Vector2 GetConnectionPointForFixedHint(FixedHint obj)
+        {
+            var index = Managers.RecipeMap.path.fixedPathHints.IndexOf(obj);
+            if (index == 0)
+            {
+                var deltaChange = GetFixedHintDeltaForFixedHint(obj)?.Deltas?.FirstOrDefault(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint) as ModifyDelta<Vector2>;
+                if (deltaChange != null)
+                {
+                    return deltaChange.NewValue;
+                }
+                return Vector2.zero;
+            }
+            var previousFixedHint = Managers.RecipeMap.path.fixedPathHints[index - 1];
+            return previousFixedHint.evenlySpacedPointsFixedGraphics.points.Last();
+        }
+
+        private static float GetPreviouslyRecordedLengthForFixedHint(FixedHint obj)
+        {
+            if (StaticStorage.CurrentPotionState.ContainsKey(DeltaProperty.PathAddedFixedHints) 
+                && StaticStorage.CurrentPotionState.ContainsKey(DeltaProperty.FixedHints))
+            {
+                var deltaChange = GetFixedHintDeltaForFixedHint(obj)?.Deltas?.FirstOrDefault(d => d.Property == DeltaProperty.FixedHint_Length) as ModifyDelta<float>;
+                if (deltaChange != null)
+                {
+                    return deltaChange.NewValue;
+                }
+            }
+
+            return GetFixedHintPathLength(obj);
+        }
+
+        private static ListAddDelta GetFixedHintDeltaForFixedHint(FixedHint obj)
+        {
+            if (!StaticStorage.CurrentPotionState.ContainsKey(DeltaProperty.PathAddedFixedHints)
+                || !StaticStorage.CurrentPotionState.ContainsKey(DeltaProperty.FixedHints))
+            {
+                return null;
+            }
+            var index = Managers.RecipeMap.path.fixedPathHints.IndexOf(obj);
+            var totalAdded = ((ModifyDelta<int>)StaticStorage.CurrentPotionState[DeltaProperty.PathAddedFixedHints]).NewValue;
+            var indexOffset = totalAdded - Managers.RecipeMap.path.fixedPathHints.Count;
+            index += indexOffset;
+            return ((ListDelta)StaticStorage.CurrentPotionState[DeltaProperty.FixedHints]).AddDeltas.FirstOrDefault(d => d.Index == index);
         }
 
         private static float GetFixedHintPathLength(FixedHint hint)
@@ -455,7 +542,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     Property = DeltaProperty.PathAddedFixedHints,
                     NewValue = StaticStorage.CurrentPotionState.TryGetValue(DeltaProperty.PathAddedFixedHints, out BaseDelta addedFixedHints)
                                 ? ((ModifyDelta<int>)addedFixedHints).NewValue
-                                : 0
+                                : Managers.RecipeMap.path.fixedPathHints.Count
                 },
                 DeltaProperty.PathFixedHintsCount => new ModifyDelta<int>
                 {

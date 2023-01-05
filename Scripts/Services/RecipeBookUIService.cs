@@ -3,6 +3,7 @@ using PotionCraft.ManagersSystem;
 using PotionCraft.ObjectBased.UIElements;
 using PotionCraft.ObjectBased.UIElements.Books;
 using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
+using PotionCraftUsefulRecipeMarks.Scripts.Storage;
 
 namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 {
@@ -18,7 +19,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
             if (recipe == null) return;
 
-            Plugin.PluginLogger.LogMessage("reconstructed recipe is not null!");
+            StaticStorage.SelectedRecipeMarkIndex = markIndex;
 
             var leftPage = Managers.Potion.recipeBook.curlPageController.frontLeftPage;
             var rightPage = Managers.Potion.recipeBook.curlPageController.frontRightPage;
