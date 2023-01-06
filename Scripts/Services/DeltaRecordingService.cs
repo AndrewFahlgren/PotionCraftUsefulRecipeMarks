@@ -28,7 +28,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             RecordRecipeMarkInfo(Managers.Potion.recipeMarks.GetMarksList().LastOrDefault());
         }
 
-        public static void SetupInitialInfoForRecipe(RecipeBookRightPageContent rightPageContent)
+        public static void SetupInitialInfoForRecipe(RecipeBookRightPageContent rightPageContent) //TODO right now this is coming in with all recipe marks. We need to remember what recipe mark we are on and use that here or previously to trim down that recipe mark list
         {
             var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
             if (!StaticStorage.RecipeMarkInfos.TryGetValue(recipeIndex, out var recipeMarkInfos))
