@@ -157,7 +157,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var oldFixedHintsIndexes = new List<int>();
             var fixedPathHints = new List<FixedHint>();
             var dummyInteractionObject = new GameObject("dummyObject");
-            var connectionPoint = Vector2.zero;
+            var offset = Vector3.zero; //TODO we might need to keep using this connection point. Maybe the default just needs to not be zero??
 
             //Reset the path information so we can start from a fresh slate
             Managers.RecipeMap.path.fixedPathHints = fixedPathHints;
@@ -202,12 +202,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 var ingredientName = fixedHintTimeline.IngredientName;
                 var grindPercent = fixedHintTimeline.GrindPercent;
 
-                if (isFirst)
-                {
-                    connectionPoint = ((ModifyDelta<Vector2>)fixedHintDelta.Deltas.First(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint)).NewValue;
-                }
-
-                isFirst = false;
 
                 var isOldFixedHint = oldFixedHintsIndexes.Contains(fixedHintDelta.Index);
                 if (!isOldFixedHint)
@@ -217,6 +211,13 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     Managers.RecipeMap.path.potionComponentHintPainter.ShowIngredientHint(false, 0.0f, dummyInteractionObject, ingredient, grindPercent);
                     Managers.RecipeMap.path.AddCurrentPathToFixedPath(ingredient);
                 }
+
+                if (isFirst)
+                {
+                    var connectionPoint = ((ModifyDelta<Vector2>)fixedHintDelta.Deltas.First(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint)).NewValue;
+                    offset = (Vector3)connectionPoint - Managers.RecipeMap.path.fixedPathHints.First().evenlySpacedPointsFixedGraphics.points.First();
+                }
+                isFirst = false;
 
                 var deletionEvents = fixedHintTimeline.GetPathDeletionEvents(recipeToClone.potionFromPanel.recipeMarks);
 
@@ -271,14 +272,23 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                         newRecipe.potionFromPanel.serializedPath.indicatorPosition = ((ModifyDelta<Vector2>)propertyDeltaValue).NewValue;
                         break;
                     case DeltaProperty.PathPosition:
-                        newRecipe.potionFromPanel.serializedPath.pathPosition = ((ModifyDelta<Vector2>)propertyDeltaValue).NewValue;
-                        var offset = (Vector3)(connectionPoint - newRecipe.potionFromPanel.serializedPath.pathPosition);
-                        newRecipe.potionFromPanel.serializedPath.fixedPathPoints.ForEach(point =>
+                        var pathPosition = ((ModifyDelta<Vector2>)propertyDeltaValue).NewValue;
+                        newRecipe.potionFromPanel.serializedPath.pathPosition = pathPosition;
+                        if (offset != Vector3.zero)
                         {
-                            point.graphicsPoints = point.graphicsPoints.Select(p => p + offset).ToList();
-                            point.physicsPoints = point.physicsPoints.Select(p => p + offset).ToList();
-                            point.dotsPoints = point.dotsPoints.Select(p => p + offset).ToList();
-                        });
+                            newRecipe.potionFromPanel.serializedPath.fixedPathPoints.ForEach(point =>
+                            {
+                                point.graphicsPoints = point.graphicsPoints.Select(p => p + offset).ToList();
+                                point.physicsPoints = point.physicsPoints.Select(p => p + offset).ToList();
+                                point.dotsPoints = point.dotsPoints.Select(p => p + offset).ToList();
+                            });
+                        }
+                        break;
+                    case DeltaProperty.IndicatorTargetPosition:
+                        newRecipe.potionFromPanel.serializedPath.indicatorTargetPosition = ((ModifyDelta<Vector2>)propertyDeltaValue).NewValue;
+                        break;
+                    case DeltaProperty.FollowButtonTargetPosition:
+                        newRecipe.potionFromPanel.serializedPath.followButtonTargetObjectPosition = ((ModifyDelta<Vector2>)propertyDeltaValue).NewValue;
                         break;
                     case DeltaProperty.Rotation:
                         newRecipe.potionFromPanel.serializedPath.indicatorRotationValue = ((ModifyDelta<float>)propertyDeltaValue).NewValue;

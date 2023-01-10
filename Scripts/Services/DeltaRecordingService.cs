@@ -177,6 +177,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             {
                 DeltaProperty.IndicatorPosition,
                 DeltaProperty.PathPosition,
+                DeltaProperty.IndicatorTargetPosition,
+                DeltaProperty.FollowButtonTargetPosition,
                 DeltaProperty.Rotation,
                 DeltaProperty.Health,
                 DeltaProperty.Effects,
@@ -196,6 +198,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             //record position
             RecordProperty(DeltaProperty.IndicatorPosition);
             RecordProperty(DeltaProperty.PathPosition);
+            RecordProperty(DeltaProperty.IndicatorTargetPosition);
+            RecordProperty(DeltaProperty.FollowButtonTargetPosition);
 
             //record rotation
             RecordProperty(DeltaProperty.Rotation);
@@ -433,18 +437,20 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         private static Vector2 GetConnectionPointForFixedHint(FixedHint obj)
         {
-            var index = Managers.RecipeMap.path.fixedPathHints.IndexOf(obj);
-            if (index == 0)
+            //Check for a previously stored value. We only want to store this once
+            var deltaChange = GetFixedHintDeltaForFixedHint(obj)?.Deltas?.FirstOrDefault(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint) as ModifyDelta<Vector2>;
+            if (deltaChange != null)
             {
-                var deltaChange = GetFixedHintDeltaForFixedHint(obj)?.Deltas?.FirstOrDefault(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint) as ModifyDelta<Vector2>;
-                if (deltaChange != null)
-                {
-                    return deltaChange.NewValue;
-                }
+                return deltaChange.NewValue;
+            }
+            var index = Managers.RecipeMap.path.fixedPathHints.IndexOf(obj);
+            if (index == -1)
+            {
                 return Vector2.zero;
             }
-            var previousFixedHint = Managers.RecipeMap.path.fixedPathHints[index - 1];
-            return previousFixedHint.evenlySpacedPointsFixedGraphics.points.Last();
+            return index == 0 
+                        ? Managers.RecipeMap.path.fixedPathHints.First().evenlySpacedPointsFixedGraphics.points.First() 
+                        : Managers.RecipeMap.path.fixedPathHints[index - 1].evenlySpacedPointsFixedGraphics.points.Last();
         }
 
         private static float GetPreviouslyRecordedLengthForFixedHint(FixedHint obj)
@@ -510,12 +516,22 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 DeltaProperty.IndicatorPosition => new ModifyDelta<Vector2>
                 {
                     Property = DeltaProperty.IndicatorPosition,
-                    NewValue = Managers.RecipeMap.recipeMapObject.indicatorContainer.localPosition
+                    NewValue = Managers.RecipeMap.indicator.thisTransform.localPosition
                 },
                 DeltaProperty.PathPosition => new ModifyDelta<Vector2>
                 {
                     Property = DeltaProperty.PathPosition,
                     NewValue = Managers.RecipeMap.path.transform.localPosition
+                },
+                DeltaProperty.IndicatorTargetPosition => new ModifyDelta<Vector2>
+                {
+                    Property = DeltaProperty.IndicatorTargetPosition,
+                    NewValue = Managers.RecipeMap.indicator.targetPosition
+                },
+                DeltaProperty.FollowButtonTargetPosition => new ModifyDelta<Vector2>
+                {
+                    Property = DeltaProperty.FollowButtonTargetPosition,
+                    NewValue = Managers.RecipeMap.recipeMapObject.followButtonTargetObject.localPosition
                 },
                 DeltaProperty.Rotation => new ModifyDelta<float>
                 {

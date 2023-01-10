@@ -8,6 +8,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta
     {
         IndicatorPosition = 0,
         PathPosition = 1,
+        IndicatorTargetPosition = 2,
+        FollowButtonTargetPosition = 3,
         Rotation = 10,
         PathHints = 20,
         PathDeletedSegments = 30,
