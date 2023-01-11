@@ -23,8 +23,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             {
                 StaticStorage.AddedListeners = true;
                 Managers.Potion.gameObject.AddComponent<UsefulRecipeMarksManager>();
+                Managers.Potion.recipeBook.bookmarkControllersGroupController.onBookmarksRearranged.AddListener(RecipeBookUIService.BookmarksRearranged);
             }
         }
+
         /// <summary>
         /// Clears out any stored static data from a previous game file if this isn't the first load of the session
         /// </summary>
@@ -33,7 +35,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             StaticStorage.CurrentPotionRecipeMarkInfos.Clear();
             StaticStorage.CurrentPotionState.Clear();
             StaticStorage.CurrentRecipeMarkInfo = null;
-            StaticStorage.SelectedRecipePotionState.Clear();
+            StaticStorage.SelectedRecipePotionState?.Clear();
             StaticStorage.SelectedRecipeMarkIndex = 0;
             StaticStorage.RecipeMarkInfos.Clear();
         }

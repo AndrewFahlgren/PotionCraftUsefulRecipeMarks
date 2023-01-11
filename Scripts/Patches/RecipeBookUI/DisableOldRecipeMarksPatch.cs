@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using PotionCraft.ObjectBased.UIElements.Books;
 using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraftUsefulRecipeMarks.Scripts.Services;
 using System;
@@ -9,12 +10,12 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.RecipeBookUI
 {
     public class DisableOldRecipeMarksPatch
     {
-        [HarmonyPatch(typeof(RecipeBookRightPageContent), "UpdateRecipeMarks")]
-        public class RecipeBookRightPageContent_UpdateRecipeMarks
+        [HarmonyPatch(typeof(Book), "UpdateCurrentPageIndex")]
+        public class Book_UpdateCurrentPageIndex
         {
-            static void Postfix(Dictionary<int, List<RecipeBookRecipeMark>> ___visibleMarks)
+            static void Postfix(Book __instance)
             {
-                Ex.RunSafe(() => RecipeBookUIService.DisableOldRecipeMarks(___visibleMarks));
+                Ex.RunSafe(() => RecipeBookUIService.DisableOldRecipeMarks(__instance));
             }
         }
         

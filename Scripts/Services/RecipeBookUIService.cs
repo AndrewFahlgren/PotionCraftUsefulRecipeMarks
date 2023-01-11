@@ -3,6 +3,7 @@ using PotionCraft.ManagersSystem;
 using PotionCraft.NotificationSystem;
 using PotionCraft.ObjectBased.Potion;
 using PotionCraft.ObjectBased.UIElements;
+using PotionCraft.ObjectBased.UIElements.Bookmarks;
 using PotionCraft.ObjectBased.UIElements.Books;
 using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraft.ScriptableObjects.Potion;
@@ -47,8 +48,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
             if (recipe == null) return;
 
-            StaticStorage.SelectedRecipeMarkIndex = markIndex;
-
             //Update page with reconstructed recipe
             var leftPage = Managers.Potion.recipeBook.curlPageController.frontLeftPage;
             var rightPage = Managers.Potion.recipeBook.curlPageController.frontRightPage;
@@ -76,6 +75,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             brewPotionButton.gameObject.SetActive(true);
             //Lock down the brew potion button for reconstructed recipes
             brewPotionButton.Locked = isReconstructed;
+
+            //Set the selected recipe mark index for later use if the player decides to continue brewing
+            StaticStorage.SelectedRecipeMarkIndex = markIndex;
         }
 
         private static void EnableDisableMark(RecipeBookRecipeMark mark, bool enabled)
@@ -99,12 +101,21 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             return new Color(baseColor.r, baseColor.g, baseColor.b, 0.5f);
         }
 
+        public static void DisableOldRecipeMarks(Book book)
+        {
+            if (book is not RecipeBook recipeBook) return;
+            var rightPage = recipeBook.curlPageController.frontRightPage;
+            var rightPageContent = (RecipeBookRightPageContent)rightPage.pageContent;
+            var visibleMarks = (Dictionary<int, List<RecipeBookRecipeMark>>)Traverse.Create(rightPageContent).Field("visibleMarks").GetValue();
+            DisableOldRecipeMarks(visibleMarks);
+        }
+
         public static void DisableOldRecipeMarks(Dictionary<int, List<RecipeBookRecipeMark>> visibleMarks)
         {
             var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
             var allMarks = visibleMarks.Values.SelectMany(v => v).ToList();
-            StaticStorage.SelectedRecipeMarkIndex = allMarks.Count - 1;
             var recipeHasSavedData = StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex);
+            StaticStorage.SelectedRecipeMarkIndex = allMarks.Count - 1;
             allMarks.ForEach(mark =>
             {
                 //Only grey out recipe marks if there are any recipe marks with good data
@@ -124,6 +135,23 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         public static bool IsAlchemyMachineRecipe(Potion recipe)
         {
             return recipe.potionFromPanel.recipeMarks.Count(m => m.type == SerializedRecipeMark.Type.PotionBase) > 1;
+        }
+
+        public static void BookmarksRearranged(BookmarkController _, List<int> intList)
+        {
+            var oldRecipeMarkInfos = StaticStorage.RecipeMarkInfos.ToList();
+            var newRecipeMarkInfos = new List<KeyValuePair<int, Dictionary<int, RecipeMarkInfo>>>();
+            for (var newIndex = 0; newIndex < intList.Count; newIndex++)
+            {
+                var oldIndex = intList[newIndex];
+                //This will recreate the old ignored list making sure to update any indexes along the way
+                var oldRecipeMarkInfo = oldRecipeMarkInfos.FirstOrDefault(rmi => rmi.Key == oldIndex);
+                if (!oldRecipeMarkInfo.Equals(default(KeyValuePair<int, Dictionary<int, RecipeMarkInfo>>)))
+                {
+                    newRecipeMarkInfos.Add(new (oldRecipeMarkInfo.Key, oldRecipeMarkInfo.Value));
+                }
+            }
+            StaticStorage.RecipeMarkInfos = newRecipeMarkInfos.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
     }
 }

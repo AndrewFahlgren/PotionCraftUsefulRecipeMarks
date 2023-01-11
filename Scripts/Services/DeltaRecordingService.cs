@@ -55,9 +55,18 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             }
 
             var recipeMarkIndex = StaticStorage.SelectedRecipeMarkIndex;
+            Plugin.PluginLogger.LogInfo($"Loading recipe mark index: {recipeMarkIndex}");
             StaticStorage.CurrentPotionRecipeMarkInfos = recipeMarkInfos.Count > recipeMarkIndex 
                                                             ? recipeMarkInfos.Take(recipeMarkIndex + 1).ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
                                                             : recipeMarkInfos;
+            var currentRecipeMarks = Managers.Potion.recipeMarks.GetMarksList();
+            Plugin.PluginLogger.LogInfo($"currentRecipeMarks.Count: {currentRecipeMarks.Count}");
+            while (currentRecipeMarks.Count > recipeMarkIndex + 1)
+            {
+                currentRecipeMarks.RemoveAt(currentRecipeMarks.Count - 1);
+                Plugin.PluginLogger.LogInfo($"removed recipe mark: currentRecipeMarks.Count: {currentRecipeMarks.Count}");
+            }
+            Plugin.PluginLogger.LogInfo($"Managers.Potion.recipeMarks.GetMarksList().Count: {Managers.Potion.recipeMarks.GetMarksList().Count}");
 
             if (StaticStorage.SelectedRecipePotionState != null)
             {
@@ -109,6 +118,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                  || recipeMark?.type == SerializedRecipeMark.Type.Ingredient
                  || (recipeMark?.type == SerializedRecipeMark.Type.Salt && recipeMark?.stringValue != LastRecipeMarkStringValue)))
             {
+                //We avoid comparisions for position info to save time
+                //Check to see if anything has changed here
+                CommitPositionInfo();
                 StaticStorage.CurrentPotionRecipeMarkInfos[StaticStorage.CurrentRecipeMarkInfo.Index] = StaticStorage.CurrentRecipeMarkInfo;
                 //Update the current potion state the the last recorded state
                 if (TemporaryCurrentPotionState != null) StaticStorage.CurrentPotionState = TemporaryCurrentPotionState;
@@ -190,23 +202,41 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
             baseProperties.ForEach(p => currentPotionState[p] = GetBaseProperty(p));
         }
-        
-        /// <summary>
-        /// Position, rotation, health
-        /// </summary>
+
         private static void RecordPositionInfo()
         {
-            //record position
-            RecordProperty(DeltaProperty.IndicatorPosition);
-            RecordProperty(DeltaProperty.PathPosition);
-            RecordProperty(DeltaProperty.IndicatorTargetPosition);
-            RecordProperty(DeltaProperty.FollowButtonTargetPosition);
+            indicatorPosition = ((ModifyDelta<Vector2>)GetBaseProperty(DeltaProperty.IndicatorPosition)).NewValue;
+            pathPosition = ((ModifyDelta<Vector2>)GetBaseProperty(DeltaProperty.PathPosition)).NewValue;
+            indicatorTargetPosition = ((ModifyDelta<Vector2>)GetBaseProperty(DeltaProperty.IndicatorTargetPosition)).NewValue;
+            followButtonTargetPosition = ((ModifyDelta<Vector2>)GetBaseProperty(DeltaProperty.FollowButtonTargetPosition)).NewValue;
+            rotation = ((ModifyDelta<float>)GetBaseProperty(DeltaProperty.Rotation)).NewValue;
+            health = ((ModifyDelta<float>)GetBaseProperty(DeltaProperty.Health)).NewValue;
+        }
 
-            //record rotation
-            RecordProperty(DeltaProperty.Rotation);
+        private static Vector2 indicatorPosition;
+        private static Vector2 pathPosition;
+        private static Vector2 indicatorTargetPosition;
+        private static Vector2 followButtonTargetPosition;
+        private static float rotation;
+        private static float health;
 
-            //record health
-            RecordCurrentHealthInfo();
+        private static void CommitPositionInfo()
+        {
+            CommitProperty(DeltaProperty.IndicatorPosition, indicatorPosition);
+            CommitProperty(DeltaProperty.PathPosition, pathPosition);
+            CommitProperty(DeltaProperty.IndicatorTargetPosition, indicatorTargetPosition);
+            CommitProperty(DeltaProperty.FollowButtonTargetPosition, followButtonTargetPosition);
+            CommitProperty(DeltaProperty.Rotation, rotation);
+            CommitProperty(DeltaProperty.Health, health);
+        }
+
+        private static void CommitProperty<T>(DeltaProperty property, T value)
+        {
+            var curProperty = new ModifyDelta<T> { Property = property, NewValue = value };
+            if (StaticStorage.CurrentPotionState[property] != curProperty)
+            {
+                StaticStorage.CurrentRecipeMarkInfo.Deltas.Add(curProperty);
+            }
         }
 
         private static void RecordMoveAlongPathInfo()
@@ -231,12 +261,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         {
             //record effects
             RecordProperty(DeltaProperty.Effects);
-        }
-
-        private static void RecordCurrentHealthInfo()
-        {
-            //record health
-            RecordProperty(DeltaProperty.Health);
         }
 
         private static void RecordNewIngredientInfo(string ingredientName)
@@ -572,6 +596,13 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 },
                 _ => throw new ArgumentException($"Property: {property} is not a base property!"),
             };
+        }
+
+        public static void DeleteMarkInfoForRecipe(Potion recipe)
+        {
+            var recipeIndex = Managers.Potion.recipeBook.savedRecipes.IndexOf(recipe);
+            if (!StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex)) return;
+            StaticStorage.RecipeMarkInfos.Remove(recipeIndex);
         }
 
         private static void DebugPrintDeltas()

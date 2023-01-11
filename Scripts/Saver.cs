@@ -5,12 +5,13 @@ using PotionCraft.ManagersSystem.SaveLoad;
 using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraft.SaveFileSystem;
 using PotionCraft.SaveLoadSystem;
+using PotionCraftUsefulRecipeMarks.Scripts.Services;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta;
 using System;
 using System.Collections.Generic;
 
-namespace PotionCraftUsefulRecipeMarks.Scripts.Services
+namespace PotionCraftUsefulRecipeMarks.Scripts
 {
     public static class Saver
     {
