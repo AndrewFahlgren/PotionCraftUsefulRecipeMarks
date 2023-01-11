@@ -10,11 +10,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
 {
     public static class StaticStorage
     {
-        public const string BookmarkGroupsJsonSaveName = "FahlgorithmUsefulRecipeMarks";
-
         public static List<string> ErrorLog = new();
-
-        public static string StateJsonString;
 
         public static bool AddedListeners;
 

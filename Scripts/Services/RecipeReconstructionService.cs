@@ -20,12 +20,23 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 {
     public static class RecipeReconstructionService
     {
+        public static bool MarkHasSavedData(int recipeIndex, int recipeMarkIndex)
+        {
+            if (!StaticStorage.RecipeMarkInfos.TryGetValue(recipeIndex, out var recipeMarkList)) return false;
+            return recipeMarkList.ContainsKey(recipeMarkIndex);
+        }
 
         public static Potion GetPotionForRecipeMark(int recipeIndex, int recipeMarkIndex)
         {
             if (!StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex)) return null;
 
             var recipeToClone = Managers.Potion.recipeBook.savedRecipes[recipeIndex];
+
+            //Do not clone the recipe if the last mark is selected. Instead return the original recipe;
+            if (recipeToClone.potionFromPanel.recipeMarks.Count == recipeMarkIndex - 1)
+            {
+                return recipeToClone;
+            }
 
             var recipeDeltas = StaticStorage.RecipeMarkInfos[recipeIndex];
             var potionState = new Dictionary<DeltaProperty, BaseDelta>();
@@ -143,6 +154,13 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 var ammountDelta = (ModifyDelta<int>)correspondingDelta.Deltas.First(d => d.Property == DeltaProperty.UsedComponent_Ammount);
                 newRecipe.usedComponents[i].amount = ammountDelta.NewValue;
             }
+            newRecipe.potionFromPanel.potionUsedComponents.Clear();
+            newRecipe.usedComponents.ForEach(component => newRecipe.potionFromPanel.potionUsedComponents.Add(new SerializedUsedComponent()
+            {
+                componentName = component.componentObject.name,
+                componentAmount = component.amount,
+                componentType = component.componentType.ToString()
+            }));
 
             //Sort the fixed hints deltas
             var deltaFixedHints = (ListDelta)potionState[DeltaProperty.FixedHints];
@@ -297,7 +315,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                         newRecipe.potionFromPanel.serializedPath.health = ((ModifyDelta<float>)propertyDeltaValue).NewValue;
                         break;
                     case DeltaProperty.Effects:
-                        newRecipe.Effects = ((ModifyDelta<List<string>>)propertyDeltaValue).NewValue.Select(e => PotionEffect.GetByName(e)).ToArray();
+                        var effectsList = ((ModifyDelta<List<string>>)propertyDeltaValue).NewValue;
+                        newRecipe.Effects = effectsList.Select(e => PotionEffect.GetByName(e)).ToArray();
+                        newRecipe.potionFromPanel.collectedPotionEffects = effectsList.ToList();
                         break;
                     case DeltaProperty.PathDeletedSegments:
                         newRecipe.potionFromPanel.serializedPath.deletedGraphicsSegments = ((ModifyDelta<float>)propertyDeltaValue).NewValue;

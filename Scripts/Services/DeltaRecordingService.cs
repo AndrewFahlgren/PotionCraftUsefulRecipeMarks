@@ -28,7 +28,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             RecordRecipeMarkInfo(Managers.Potion.recipeMarks.GetMarksList().LastOrDefault());
         }
 
-        public static void SetupInitialInfoForRecipe(RecipeBookRightPageContent rightPageContent) //TODO right now this is coming in with all recipe marks. We need to remember what recipe mark we are on and use that here or previously to trim down that recipe mark list
+        public static void SetupInitialInfoForRecipe(RecipeBookRightPageContent rightPageContent)
         {
             var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
             if (!StaticStorage.RecipeMarkInfos.TryGetValue(recipeIndex, out var recipeMarkInfos))
@@ -95,6 +95,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     Deltas = StaticStorage.CurrentPotionState.Values.ToList()
                 }
             };
+            StaticStorage.CurrentRecipeMarkInfo = null;
         }
 
         private static string LastRecipeMarkStringValue;
@@ -256,11 +257,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         private static void RecordEndPathHintInfo()
         {
-            var fixedHintsList = (ListDelta)StaticStorage.CurrentPotionState[DeltaProperty.FixedHints];
-            var lastPathHint = fixedHintsList.AddDeltas.LastOrDefault();
-            if (lastPathHint == null) return;
-            var lastPathHintIndex = (ModifyDelta<int>)StaticStorage.CurrentPotionState[DeltaProperty.PathAddedFixedHints];
-            RecordNewListAddInfo(DeltaProperty.FixedHints, Managers.RecipeMap.path.fixedPathHints, lastPathHintIndex.NewValue - 1);
+            RecordNewListAddInfo(DeltaProperty.FixedHints, Managers.RecipeMap.path.fixedPathHints, Managers.RecipeMap.path.fixedPathHints.Count - 1);
         }
 
         private static void HandleDeletedFixedHintFromVoidSalt()
@@ -306,7 +303,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var newAddDelta = GetBaseAddDelta(sourceAdded, index);
             if (addDeltaIndex == -1)
             {
-                addDeltaIndex = index;
+                addDeltaIndex = index; //TODO this just seems wrong. Lets think about what happens later on here
             }
             var lastAddedDelta = potionStateList.AddDeltas.Count > addDeltaIndex ? potionStateList.AddDeltas[addDeltaIndex] : null;
 
