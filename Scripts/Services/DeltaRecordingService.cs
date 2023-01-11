@@ -55,18 +55,14 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             }
 
             var recipeMarkIndex = StaticStorage.SelectedRecipeMarkIndex;
-            Plugin.PluginLogger.LogInfo($"Loading recipe mark index: {recipeMarkIndex}");
             StaticStorage.CurrentPotionRecipeMarkInfos = recipeMarkInfos.Count > recipeMarkIndex 
                                                             ? recipeMarkInfos.Take(recipeMarkIndex + 1).ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
                                                             : recipeMarkInfos;
             var currentRecipeMarks = Managers.Potion.recipeMarks.GetMarksList();
-            Plugin.PluginLogger.LogInfo($"currentRecipeMarks.Count: {currentRecipeMarks.Count}");
             while (currentRecipeMarks.Count > recipeMarkIndex + 1)
             {
                 currentRecipeMarks.RemoveAt(currentRecipeMarks.Count - 1);
-                Plugin.PluginLogger.LogInfo($"removed recipe mark: currentRecipeMarks.Count: {currentRecipeMarks.Count}");
             }
-            Plugin.PluginLogger.LogInfo($"Managers.Potion.recipeMarks.GetMarksList().Count: {Managers.Potion.recipeMarks.GetMarksList().Count}");
 
             if (StaticStorage.SelectedRecipePotionState != null)
             {
