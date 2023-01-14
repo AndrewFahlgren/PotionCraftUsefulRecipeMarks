@@ -15,7 +15,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta
         PathDeletedSegments = 30,
         PathAddedFixedHints = 35, //TODO get rid of this and just count ingredient marks
         PathFixedHintsCount = 36,
-        PathRotation = 40,
         FixedHints = 50,
         FixedHint_Length = 53,
         FixedHint_ConnectionPoint = 54,

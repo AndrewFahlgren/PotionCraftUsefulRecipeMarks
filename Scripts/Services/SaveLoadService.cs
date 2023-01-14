@@ -24,6 +24,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 StaticStorage.AddedListeners = true;
                 Managers.Potion.gameObject.AddComponent<UsefulRecipeMarksManager>();
                 Managers.Potion.recipeBook.bookmarkControllersGroupController.onBookmarksRearranged.AddListener(RecipeBookUIService.BookmarksRearranged);
+                Managers.Potion.recipeBook.onPageChanged.AddListener(RecipeBookUIService.UpdateRecipeMarksForPageChange);
+                Managers.Potion.recipeBook.onActiveStateChanged.AddListener(RecipeBookUIService.UpdateRecipeMarksForStateChanged);
             }
         }
 

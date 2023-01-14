@@ -29,34 +29,5 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
             Timeline[recipeMarkIndex] = deltas.Where(d => d.Property == DeltaProperty.FixedHint_Length).ToList();
             if (recipeMarkIndex < AddedRecipeIndex) AddedRecipeIndex = recipeMarkIndex;
         }
-
-        public List<(bool, float)> GetPathDeletionEvents(List<SerializedRecipeMark> allRecipeMarks) 
-        {
-            var currentLength = -1f;
-            var deletionEvents = new List<(bool, float)>();
-            Timeline.ToList().ForEach(fixedHintEvent =>
-            {
-                var lengthDelta = fixedHintEvent.Value.FirstOrDefault(d => d.Property == DeltaProperty.FixedHint_Length) as ModifyDelta<float>;
-                if (lengthDelta == null) return;
-
-                if (currentLength < 0)
-                {
-                    currentLength = lengthDelta.NewValue;
-                    return;
-                }
-
-                var eventRecipeMark = allRecipeMarks[fixedHintEvent.Key];
-                var deleteFromEnd = eventRecipeMark.type == SerializedRecipeMark.Type.Salt && eventRecipeMark.stringValue == DeltaRecordingService.VoidSaltName;
-                var deletedLength = currentLength - lengthDelta.NewValue;
-                if (deletedLength < 0)
-                {
-                    throw new Exception("Looks like someone added a new salt. This mod simply cannot handle paths which increase in length.");
-                }
-
-                deletionEvents.Add((deleteFromEnd, deletedLength));
-                currentLength = lengthDelta.NewValue;
-            });
-            return deletionEvents;
-        }
     }
 }

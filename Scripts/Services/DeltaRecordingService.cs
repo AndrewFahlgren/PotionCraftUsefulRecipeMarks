@@ -33,6 +33,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
             if (!StaticStorage.RecipeMarkInfos.TryGetValue(recipeIndex, out var recipeMarkInfos))
             {
+                //Our custom recipe breaks this initial index set so fix that here
+                Managers.Potion.recipeBook.currentPotionRecipeIndex = recipeIndex;
+
                 SetupInitialInfo();
                 //Add the old serialized path for this pre mod recipe
                 StaticStorage.CurrentPotionRecipeMarkInfos[0].Deltas.Add(new ModifyDelta<SerializedPath>
@@ -155,6 +158,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                         HandleDeletedFixedHintFromVoidSalt();
                         RecordEndPathHintInfo();
                     }
+                    else
+                    {
+                        RecordConnectionPointInfo();
+                    }
                     break;
                 case SerializedRecipeMark.Type.Ingredient:
                     RecordNewIngredientInfo(recipeMark.stringValue);
@@ -192,7 +199,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 DeltaProperty.Health,
                 DeltaProperty.Effects,
                 DeltaProperty.PathDeletedSegments,
-                DeltaProperty.PathRotation,
                 DeltaProperty.PathFixedHintsCount
             };
 
@@ -250,7 +256,24 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             }
 
             //if (firstPathHint == null) return;
-            RecordListObjectInfo(DeltaProperty.FixedHints, Managers.RecipeMap.path.fixedPathHints.FirstOrDefault(), 0, fixedHintsList.AddDeltas.Count - Managers.RecipeMap.path.fixedPathHints.Count);
+            var offset = fixedHintsList.AddDeltas.Count - Managers.RecipeMap.path.fixedPathHints.Count;
+
+            //Record fixed hint info for the current hint we are deleting
+            RecordListObjectInfo(DeltaProperty.FixedHints, Managers.RecipeMap.path.fixedPathHints.FirstOrDefault(), 0, offset);
+
+            //Record connection point info for all later hints since moving can rotate
+            RecordConnectionPointInfo(offset);
+        }
+
+        private static void RecordConnectionPointInfo(int indexOffset = 0)
+        {
+            for (var i = 1; i < Managers.RecipeMap.path.fixedPathHints.Count; i++)
+            {
+                //Plugin.PluginLogger.LogMessage($"RecordConnectionPointInfo: i={i}");
+                var curFixedHint = Managers.RecipeMap.path.fixedPathHints[i];
+                RecordListObjectInfo(DeltaProperty.FixedHints, curFixedHint, i, i + indexOffset, new List<DeltaProperty> { DeltaProperty.FixedHint_ConnectionPoint }); //TODO I think this is doing unexpected things. Put debug statements here to make sure all of the indexing and stuff is right
+            }
+            //Plugin.PluginLogger.LogMessage($"RecordConnectionPointInfo: end");
         }
 
         private static void RecordEffectInfo()
@@ -317,10 +340,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             RecordListObjectInfo(property, lastItem, indexOverride == -1 ? sourceList.Count - 1 : indexOverride);
         }
 
-        private static void RecordListObjectInfo<T>(DeltaProperty property, T sourceAdded, int index, int addDeltaIndex = -1)
+        private static void RecordListObjectInfo<T>(DeltaProperty property, T sourceAdded, int index, int addDeltaIndex = -1, List<DeltaProperty> propertiesToRecord = null)
         {
             var potionStateList = StaticStorage.CurrentPotionState[property] as ListDelta;
-            var newAddDelta = GetBaseAddDelta(sourceAdded, index);
+            var newAddDelta = GetBaseAddDelta(sourceAdded, index, propertiesToRecord);
             if (addDeltaIndex == -1)
             {
                 addDeltaIndex = index; //TODO this just seems wrong. Lets think about what happens later on here
@@ -370,7 +393,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             return new ListDelta
             {
                 Property = DeltaProperty.UsedComponents,
-                AddDeltas = Managers.Potion.usedComponents.Select(GetBaseAddDelta).Where(d => d != null).ToList(),
+                AddDeltas = Managers.Potion.usedComponents.Select((u, i) => GetBaseAddDelta(u, i)).Where(d => d != null).ToList(),
             };
         }
         private static ListDelta GetFixedHintsProperty()
@@ -378,11 +401,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             return new ListDelta
             {
                 Property = DeltaProperty.FixedHints,
-                AddDeltas = Managers.RecipeMap.path.fixedPathHints.Select(GetBaseAddDelta).Where(d => d != null).ToList(),
+                AddDeltas = Managers.RecipeMap.path.fixedPathHints.Select((h, i) => GetBaseAddDelta(h, i)).Where(d => d != null).ToList(),
             };
         }
 
-        private static ListAddDelta GetBaseAddDelta(object obj, int index)
+        private static ListAddDelta GetBaseAddDelta(object obj, int index, List<DeltaProperty> propertiesToRecord = null)
         {
             if (obj == null) return null;
 
@@ -406,7 +429,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             {
                 Index = index,
                 Property = propertyEnum,
-                Deltas = GetAllBaseProperties(obj)
+                Deltas = propertiesToRecord == null ? GetAllBaseProperties(obj) : propertiesToRecord.Select(p => GetListObjectProperty(p, obj)).ToList()
             };
         }
 
@@ -431,6 +454,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         private static ModifyDelta GetListObjectProperty(DeltaProperty property, object obj)
         {
+           // Plugin.PluginLogger.LogMessage($"GetListObjectProperty: property={property}");
             return property switch
             {
                 DeltaProperty.UsedComponent_Ammount => new ModifyDelta<int>
@@ -454,20 +478,26 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         private static Vector2 GetConnectionPointForFixedHint(FixedHint obj)
         {
-            //Check for a previously stored value. We only want to store this once
-            var deltaChange = GetFixedHintDeltaForFixedHint(obj)?.Deltas?.FirstOrDefault(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint) as ModifyDelta<Vector2>;
-            if (deltaChange != null)
-            {
-                return deltaChange.NewValue;
-            }
             var index = Managers.RecipeMap.path.fixedPathHints.IndexOf(obj);
             if (index == -1)
             {
                 return Vector2.zero;
             }
-            return index == 0 
-                        ? Managers.RecipeMap.path.fixedPathHints.First().evenlySpacedPointsFixedGraphics.points.First() 
-                        : Managers.RecipeMap.path.fixedPathHints[index - 1].evenlySpacedPointsFixedGraphics.points.Last();
+            //Check for a previously stored value. We only want to store while this isn't the current first fixed hint.
+            if (index == 0)
+            {
+                var deltaChange = GetFixedHintDeltaForFixedHint(obj)?.Deltas?.FirstOrDefault(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint) as ModifyDelta<Vector2>;
+                if (deltaChange != null)
+                {
+                    return deltaChange.NewValue;
+                }
+
+                //If this is the first index and we don't have a previously saved delta change then this is the entry point and we can save the connection point from the first dot
+                return Managers.RecipeMap.path.fixedPathHints.First().evenlySpacedPointsFixedGraphics.points.First();
+            }
+
+            //If this isn't the first fixed hint we can always check the last hint of the previous fixed hint
+            return Managers.RecipeMap.path.fixedPathHints[index - 1].evenlySpacedPointsFixedGraphics.points.Last();
         }
 
         private static float GetPreviouslyRecordedLengthForFixedHint(FixedHint obj)
@@ -558,7 +588,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 DeltaProperty.Health => new ModifyDelta<float>
                 {
                     Property = DeltaProperty.Health,
-                    NewValue = (float)Traverse.Create(Managers.RecipeMap.indicator).Field("health").GetValue()
+                    NewValue = (float)Traverse.Create(Managers.RecipeMap.indicator).Field("visualHealth").GetValue()
                 },
                 DeltaProperty.Effects => new ModifyDelta<List<string>>
                 {
@@ -581,14 +611,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 {
                     Property = DeltaProperty.PathFixedHintsCount,
                     NewValue = Managers.RecipeMap.path.fixedPathHints.Count
-                },
-                DeltaProperty.PathRotation => new ModifyDelta<Quaternion>
-                {
-                    Property = DeltaProperty.PathRotation,
-                    NewValue = Traverse.Create(Managers.RecipeMap.path.fixedPathHints.FirstOrDefault())
-                                       ?.Field("mortarTransform")
-                                       ?.GetValue<Transform>()?.rotation 
-                                       ?? Quaternion.identity
                 },
                 _ => throw new ArgumentException($"Property: {property} is not a base property!"),
             };

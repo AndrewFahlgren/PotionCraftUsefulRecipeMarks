@@ -69,10 +69,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             if (isReconstructed)
             {
                 DisableRecipeWaypointsUIElements(rightPageContent);
+                //Make sure the brew potion button is active (this can be inactive if recipe waypoints is installed)
+                brewPotionButton.gameObject.SetActive(true);
             }
 
-            //Make sure the brew potion button is active (this can be inactive if recipe waypoints is installed)
-            brewPotionButton.gameObject.SetActive(true);
             //Lock down the brew potion button for reconstructed recipes
             brewPotionButton.Locked = isReconstructed;
 
@@ -99,6 +99,17 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         private static Color GetDisabledColor(Color baseColor)
         {
             return new Color(baseColor.r, baseColor.g, baseColor.b, 0.5f);
+        }
+
+        public static void UpdateRecipeMarksForStateChanged(bool shown)
+        {
+            if (!shown) return;
+            DisableOldRecipeMarks(Managers.Potion.recipeBook);
+        }
+
+        public static void UpdateRecipeMarksForPageChange(int _, int _0)
+        {
+            DisableOldRecipeMarks(Managers.Potion.recipeBook);
         }
 
         public static void DisableOldRecipeMarks(Book book)

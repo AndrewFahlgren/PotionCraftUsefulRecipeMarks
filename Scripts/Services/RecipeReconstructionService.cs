@@ -41,6 +41,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var recipeDeltas = StaticStorage.RecipeMarkInfos[recipeIndex];
             var potionState = new Dictionary<DeltaProperty, BaseDelta>();
             var reconstructionTimeline = new ReconstructionTimeline();
+            var lowestIngredientIndex = -1;
 
             for (var i = recipeMarkIndex; i >= 0; i--)
             {
@@ -94,7 +95,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                                 //Check to see if we have already found enough ingredients to satisfy the selected recipe mark
                                 if (potionState.TryGetValue(DeltaProperty.PathFixedHintsCount, out BaseDelta existingPathFixedHintsCount))
                                 {
-                                    if (curIndex < finalIngredientIndex - ((ModifyDelta<int>)existingPathFixedHintsCount).NewValue + 1) return;
+                                    lowestIngredientIndex = finalIngredientIndex - ((ModifyDelta<int>)existingPathFixedHintsCount).NewValue + 1;
+                                    if (curIndex < lowestIngredientIndex) return;
                                 }
                             }
 
@@ -132,9 +134,16 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 reconstructionTimeline.AddBasePropertyInformationFromDeltas(recipeToClone.potionFromPanel.recipeMarks, i, curRecipeMarkDeltas.Deltas);
             }
 
+            //We may have added information for some fixed hints which were not actually a part of the final path
+            var fixedHints = (ListDelta)potionState[DeltaProperty.FixedHints];
+            fixedHints.AddDeltas.RemoveAll(d => d.Index < lowestIngredientIndex);
+            reconstructionTimeline.FixedHintTimelines.Where(fht => fht.Key < lowestIngredientIndex)
+                                                     .ToList()
+                                                     .ForEach(fht => reconstructionTimeline.FixedHintTimelines.Remove(fht.Key));
+
             StaticStorage.SelectedRecipePotionState = potionState;
-            DebugLogObject(potionState);
-            DebugLogObject(reconstructionTimeline);
+            //DebugLogObject(potionState);
+            //DebugLogObject(reconstructionTimeline);
 
             var newRecipe = recipeToClone.Clone();
 
@@ -150,7 +159,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     newRecipe.usedComponents.RemoveAt(i);
                     continue;
                 }
-                Plugin.PluginLogger.LogMessage("1");
                 var ammountDelta = (ModifyDelta<int>)correspondingDelta.Deltas.First(d => d.Property == DeltaProperty.UsedComponent_Ammount);
                 newRecipe.usedComponents[i].amount = ammountDelta.NewValue;
             }
@@ -175,7 +183,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var oldFixedHintsIndexes = new List<int>();
             var fixedPathHints = new List<FixedHint>();
             var dummyInteractionObject = new GameObject("dummyObject");
-            var offset = Vector3.zero; //TODO we might need to keep using this connection point. Maybe the default just needs to not be zero??
+            var connectionPoint = Vector3.zero;
+            var firstGeneratedPoint = Vector3.zero;
 
             //Reset the path information so we can start from a fresh slate
             Managers.RecipeMap.path.fixedPathHints = fixedPathHints;
@@ -210,12 +219,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             {
                 var index = fixedHintDelta.Index;
 
-                if (!isFirst)
-                {
-                    var fixedHintRotationEvents = reconstructionTimeline.GetRotationEventsToApplyBeforeAddingFixedHint(index);
-                    fixedHintRotationEvents.ForEach(rotation => RotatePath(rotation));
-                }
-
                 var fixedHintTimeline = reconstructionTimeline.FixedHintTimelines[index];
                 var ingredientName = fixedHintTimeline.IngredientName;
                 var grindPercent = fixedHintTimeline.GrindPercent;
@@ -232,38 +235,53 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
                 if (isFirst)
                 {
-                    var connectionPoint = ((ModifyDelta<Vector2>)fixedHintDelta.Deltas.First(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint)).NewValue;
-                    offset = (Vector3)connectionPoint - Managers.RecipeMap.path.fixedPathHints.First().evenlySpacedPointsFixedGraphics.points.First();
+                    connectionPoint = ((ModifyDelta<Vector2>)fixedHintDelta.Deltas.First(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint)).NewValue;
+                    firstGeneratedPoint = Managers.RecipeMap.path.fixedPathHints.First().evenlySpacedPointsFixedGraphics.points.First();
                 }
-                isFirst = false;
 
-                var deletionEvents = fixedHintTimeline.GetPathDeletionEvents(recipeToClone.potionFromPanel.recipeMarks);
-
-                deletionEvents.ForEach(deletionEvent =>
+                //Run through all path events in order to manipulate the path correctly
+                var deletionEvents = reconstructionTimeline.GetPathDeletionEvents(recipeToClone.potionFromPanel.recipeMarks, index);
+                var maxDeletionIndex = deletionEvents.Any() ? deletionEvents.Max(d => d.index) : -1;
+                var rotationEvents = reconstructionTimeline.GetRotationEventsForFixedHint(index);
+                var maxRotationIndex = rotationEvents.Any() ? rotationEvents.Max(d => d.index) : -1;
+                var maxEventIndex = Mathf.Max(maxDeletionIndex, maxRotationIndex);
+                for (var i = 0; i <= maxEventIndex; i++)
                 {
-                    var segmentLengthToDelete = deletionEvent.Item2;
-                    var deleteFromEnd = deletionEvent.Item1;
-                    if (segmentLengthToDelete > 0)
+                    var anyDeletion = deletionEvents.Any(e => e.index == i);
+                    var anyRotation = rotationEvents.Any(e => e.index == i);
+                    if (anyDeletion)
                     {
-                        if (deleteFromEnd)
+                        var deletionEvent = deletionEvents.First(e => e.index == i);
+                        var segmentLengthToDelete = deletionEvent.length;
+                        var deleteFromEnd = deletionEvent.fromEnd;
+                        if (segmentLengthToDelete > 0)
                         {
-                            //Round segment legnth to known void salt delete per grain to ensure exact matching of path length
-                            segmentLengthToDelete = MathF.Round(segmentLengthToDelete - 0.099f, 1, MidpointRounding.AwayFromZero);
-                            if (segmentLengthToDelete > 0)
+                            if (deleteFromEnd)
                             {
-                                Managers.RecipeMap.path.DeleteSegmentFromEnd(segmentLengthToDelete);
+                                //Round segment legnth to known void salt delete per grain to ensure exact matching of path length
+                                segmentLengthToDelete = MathF.Round(segmentLengthToDelete - 0.099f, 1, MidpointRounding.AwayFromZero);
+                                if (segmentLengthToDelete > 0)
+                                {
+                                    Managers.RecipeMap.path.DeleteSegmentFromEnd(segmentLengthToDelete);
+                                }
+                            }
+                            else
+                            {
+                                Traverse.Create(Managers.RecipeMap.path).Method("DeleteFromFixedPath", segmentLengthToDelete, Managers.RecipeMap.path.fixedPathHints.First()).GetValue();
                             }
                         }
-                        else
-                        {
-                            Traverse.Create(Managers.RecipeMap.path).Method("DeleteFromFixedPath", segmentLengthToDelete, Managers.RecipeMap.path.fixedPathHints.First()).GetValue();
-                        }
                     }
-                });
+                    if (anyRotation)
+                    {
+                        var rotationEvent = rotationEvents.First(e => e.index == i);
+                        var currentPosition = Managers.RecipeMap.path.fixedPathHints[0].evenlySpacedPointsFixedGraphics.points[0];
+                        RotatePath(rotationEvent.rotation, -currentPosition);
+                    }
+                }
+                isFirst = false;
             }
 
-            var rotationEvents = reconstructionTimeline.GetRotationEventsToApplyAfterAllFixedHints();
-            rotationEvents.ForEach(rotation => RotatePath(rotation));
+            var offset = connectionPoint - firstGeneratedPoint;
 
             //Serialize the path
             var serializedPath = SerializedPath.GetPathFromCurrentPotion();
@@ -312,7 +330,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                         newRecipe.potionFromPanel.serializedPath.indicatorRotationValue = ((ModifyDelta<float>)propertyDeltaValue).NewValue;
                         break;
                     case DeltaProperty.Health:
-                        newRecipe.potionFromPanel.serializedPath.health = ((ModifyDelta<float>)propertyDeltaValue).NewValue;
+                        var newHealth = ((ModifyDelta<float>)propertyDeltaValue).NewValue;
+                        if (newHealth > 0.01f)
+                        {
+                            newRecipe.potionFromPanel.serializedPath.health = newHealth;
+                        }
                         break;
                     case DeltaProperty.Effects:
                         var effectsList = ((ModifyDelta<List<string>>)propertyDeltaValue).NewValue;
@@ -328,11 +350,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             return newRecipe;
         }
 
-        private static void RotatePath(Quaternion rotation)
+        private static void RotatePath(Quaternion rotation, Vector3 localPosition)
         {
             if (rotation != Quaternion.identity)
             {
-                var localPosition = Managers.RecipeMap.path.thisTransform.localPosition;
                 var rotationMatrix = Matrix4x4.Translate(-localPosition) * Matrix4x4.Rotate(rotation) * Matrix4x4.Translate(localPosition);
                 var rotateByMethod = typeof(FixedHint).GetMethod("RotateBy", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
                 Managers.RecipeMap.path.fixedPathHints.ForEach(f => rotateByMethod.Invoke(f, new object[] { rotationMatrix }));
