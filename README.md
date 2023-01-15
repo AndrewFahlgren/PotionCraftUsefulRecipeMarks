@@ -1,6 +1,6 @@
 # Useful Recipe Marks
 
-A mod that lets you continue brewing from any recipe mark!
+A mod that lets you continue brewing from any recipe mark! Compatible with Potion Craft v1.0!
 
 NOTE: this only works with newly saved recipes. Pre-mod recipes will not have this functionality. This is because not enough information is currently stored to recreate a recipe and new information must be gathered while brewing.
 
