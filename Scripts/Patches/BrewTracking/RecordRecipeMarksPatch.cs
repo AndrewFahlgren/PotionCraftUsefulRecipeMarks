@@ -24,8 +24,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
             }
         }
 
-        [HarmonyPatch(typeof(RecipeMarksSubManager), "AddSpoonMark")]
-        public class RecipeMarksSubManager_AddSpoonMark
+        [HarmonyPatch(typeof(NonTeleportationFixedHint), "RunAlongPath")]
+        public class FixedHint_RunAlongPath
         {
             static void Postfix()
             {

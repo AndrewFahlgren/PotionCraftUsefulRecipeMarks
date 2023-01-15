@@ -167,8 +167,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                                                      .ForEach(fht => reconstructionTimeline.FixedHintTimelines.Remove(fht.Key));
 
             StaticStorage.SelectedRecipePotionState = potionState;
-            DebugLogObject(potionState);
-            DebugLogObject(reconstructionTimeline);
+            //DebugLogObject(potionState);
+            //DebugLogObject(reconstructionTimeline);
 
             var newRecipe = recipeToClone.Clone();
 
@@ -338,13 +338,27 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     case DeltaProperty.PathPosition:
                         var pathPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
                         newRecipe.potionFromPanel.serializedPath.pathPosition = pathPosition;
-                        if (offset != Vector3.zero)
+
+                        if (deltaFixedHints.AddDeltas.Any())
                         {
-                            newRecipe.potionFromPanel.serializedPath.fixedPathPoints.ForEach(point =>
+                            if (offset != Vector3.zero)
                             {
-                                point.graphicsPoints = point.graphicsPoints.Select(p => p + offset).ToList();
-                                point.physicsPoints = point.physicsPoints.Select(p => p + offset).ToList();
-                                point.dotsPoints = point.dotsPoints.Select(p => p + offset).ToList();
+                                newRecipe.potionFromPanel.serializedPath.fixedPathPoints.ForEach(point =>
+                                {
+                                    point.graphicsPoints = point.graphicsPoints.Select(p => p + offset).ToList();
+                                    point.physicsPoints = point.physicsPoints.Select(p => p + offset).ToList();
+                                    point.dotsPoints = point.dotsPoints.Select(p => p + offset).ToList();
+                                });
+                            }
+                        }
+                        else
+                        {
+                            newRecipe.potionFromPanel.serializedPath.fixedPathPoints.Add(new SerializedPathPoints
+                            {
+                                graphicsPoints = new List<Vector3> { -newRecipe.potionFromPanel.serializedPath.pathPosition },
+                                physicsPoints = new List<Vector3> { -newRecipe.potionFromPanel.serializedPath.pathPosition },
+                                pathEndParameters = new PathEndParameters { spriteIndex = 2 },
+                                pathStartParameters = new PathEndParameters { spriteIndex = 2 }
                             });
                         }
                         break;
