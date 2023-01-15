@@ -29,6 +29,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
             public Dictionary<int, RecipeMarkInfo> CurrentPotionRecipeMarkInfos { get; set; }
             public Dictionary<DeltaProperty, BaseDelta> CurrentPotionState { get; set; }
             public RecipeMarkInfo CurrentRecipeMarkInfo { get; set; }
+            public Dictionary<int, RecipeMarkInfo> PreviousPotionRecipeMarkInfo { get; set; }
             public Dictionary<DeltaProperty, BaseDelta> SelectedRecipePotionState { get; set; }
             public int SelectedRecipeMarkIndex { get; set; }
             public Dictionary<int, Dictionary<int, RecipeMarkInfo>> RecipeMarkInfos { get; set; }
@@ -46,6 +47,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
                 CurrentPotionRecipeMarkInfos = StaticStorage.CurrentPotionRecipeMarkInfos,
                 CurrentPotionState = StaticStorage.CurrentPotionState,
                 CurrentRecipeMarkInfo = StaticStorage.CurrentRecipeMarkInfo,
+                PreviousPotionRecipeMarkInfo = StaticStorage.PreviousPotionRecipeMarkInfo,
                 SelectedRecipePotionState = StaticStorage.SelectedRecipePotionState,
                 SelectedRecipeMarkIndex = StaticStorage.SelectedRecipeMarkIndex,
                 RecipeMarkInfos = StaticStorage.RecipeMarkInfos,
@@ -70,7 +72,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
 
             if (loadedSaveState.CurrentPotionRecipeMarkInfos == null 
                 || loadedSaveState.CurrentPotionState == null
-                || loadedSaveState.SelectedRecipePotionState == null
                 || loadedSaveState.RecipeMarkInfos == null
                 || loadedSaveState.ErrorLog == null)
             {
@@ -82,6 +83,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
             StaticStorage.CurrentPotionRecipeMarkInfos = loadedSaveState.CurrentPotionRecipeMarkInfos;
             StaticStorage.CurrentPotionState = loadedSaveState.CurrentPotionState;
             StaticStorage.CurrentRecipeMarkInfo = loadedSaveState.CurrentRecipeMarkInfo;
+            StaticStorage.PreviousPotionRecipeMarkInfo = loadedSaveState.PreviousPotionRecipeMarkInfo;
             StaticStorage.SelectedRecipePotionState = loadedSaveState.SelectedRecipePotionState;
             StaticStorage.SelectedRecipeMarkIndex = loadedSaveState.SelectedRecipeMarkIndex;
             StaticStorage.RecipeMarkInfos = loadedSaveState.RecipeMarkInfos;

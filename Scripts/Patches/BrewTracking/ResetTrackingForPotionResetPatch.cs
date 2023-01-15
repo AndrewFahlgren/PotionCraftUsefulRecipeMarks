@@ -11,7 +11,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
         {
             static void Postfix()
             {
-                Ex.RunSafe(() => DeltaRecordingService.SetupInitialInfo());
+                Ex.RunSafe(() => DeltaRecordingService.ResetPotion());
             }
         }
     }

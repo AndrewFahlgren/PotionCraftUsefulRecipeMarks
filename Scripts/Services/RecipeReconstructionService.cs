@@ -42,6 +42,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var potionState = new Dictionary<DeltaProperty, BaseDelta>();
             var reconstructionTimeline = new ReconstructionTimeline();
             var lowestIngredientIndex = -1;
+            var ignoreFixedHintIndexes = new List<int>();
+            int? previousAddedIngredients = null;
 
             for (var i = recipeMarkIndex; i >= 0; i--)
             {
@@ -55,14 +57,13 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                             ListDelta listDelta => delta,
                             ListAddDelta addDelta => new ListDelta
                             {
-                                Property = delta.Property,
-                                AddDeltas = new List<ListAddDelta> { addDelta }
+                                Property = delta.Property
                             },
                             _ => delta,
                         };
-                        if (delta.Property == DeltaProperty.FixedHints)
+                        if (delta is ListAddDelta firstAddDelta)
                         {
-                            ((ListDelta)potionState[delta.Property]).AddDeltas.ForEach(addFixedHintDeltaToTimeline);
+                            processListAddDelta(firstAddDelta, (ListDelta)potionState[delta.Property]);
                         }
                         return;
                     }
@@ -85,9 +86,29 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                         var curIndex = addDelta.Index;
                         if (addDelta.Property == DeltaProperty.FixedHints)
                         {
-                            if (potionState.TryGetValue(DeltaProperty.PathAddedFixedHints, out BaseDelta existingPathAddedFixedHints))
+                            //This fixed hint was deleted by void salt in the future. Ignore this adddelta.
+                            if (ignoreFixedHintIndexes.Contains(curIndex)) return;
+
+                            if (!potionState.TryGetValue(DeltaProperty.PathAddedFixedHints, out BaseDelta existingPathAddedFixedHints))
+                                existingPathAddedFixedHints = curRecipeMarkDeltas.Deltas.FirstOrDefault(d => d.Property == DeltaProperty.PathAddedFixedHints) as ModifyDelta<int>;
+
+                            if (existingPathAddedFixedHints != null)
                             {
-                                var finalIngredientIndex = ((ModifyDelta<int>)existingPathAddedFixedHints).NewValue - 1;
+                                var existingAddedIngredients = ((ModifyDelta<int>)existingPathAddedFixedHints).NewValue;
+
+                                //When we are navigating backwards this value should never increase. If it does a void salt deletion occured
+                                var currentAddedIngredients = curRecipeMarkDeltas.Deltas.FirstOrDefault(d => d.Property == DeltaProperty.PathAddedFixedHints) as ModifyDelta<int>;
+                                if (currentAddedIngredients != null)
+                                {
+                                    if (previousAddedIngredients != null && currentAddedIngredients.NewValue > previousAddedIngredients)
+                                    {
+                                        //At this point everything referring to the latest index should be ignored since that ingredient was fully deleted by void salt
+                                        ignoreFixedHintIndexes.Add(curIndex);
+                                        return;
+                                    }
+                                    previousAddedIngredients = currentAddedIngredients.NewValue;
+                                }
+                                var finalIngredientIndex = existingAddedIngredients - 1;
 
                                 //This ingredient may have been deleted with void salt. If this is the case ignore this added ingredient.
                                 if (curIndex > finalIngredientIndex) return;
@@ -134,16 +155,20 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 reconstructionTimeline.AddBasePropertyInformationFromDeltas(recipeToClone.potionFromPanel.recipeMarks, i, curRecipeMarkDeltas.Deltas);
             }
 
-            //We may have added information for some fixed hints which were not actually a part of the final path
             var fixedHints = (ListDelta)potionState[DeltaProperty.FixedHints];
+            var fixedHintCount = ((ModifyDelta<int>)potionState[DeltaProperty.PathFixedHintsCount]).NewValue;
+            //Due to timing issues when recording potion state we may have added additional fixed hints. Remove all of those here.
+            fixedHints.AddDeltas = fixedHints.AddDeltas.OrderBy(d => d.Index).Take(fixedHintCount).ToList();
+
+            //We may have added information for some fixed hints which were not actually a part of the final path
             fixedHints.AddDeltas.RemoveAll(d => d.Index < lowestIngredientIndex);
             reconstructionTimeline.FixedHintTimelines.Where(fht => fht.Key < lowestIngredientIndex)
                                                      .ToList()
                                                      .ForEach(fht => reconstructionTimeline.FixedHintTimelines.Remove(fht.Key));
 
             StaticStorage.SelectedRecipePotionState = potionState;
-            //DebugLogObject(potionState);
-            //DebugLogObject(reconstructionTimeline);
+            DebugLogObject(potionState);
+            DebugLogObject(reconstructionTimeline);
 
             var newRecipe = recipeToClone.Clone();
 
@@ -235,7 +260,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
                 if (isFirst)
                 {
-                    connectionPoint = ((ModifyDelta<Vector2>)fixedHintDelta.Deltas.First(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint)).NewValue;
+                    connectionPoint = ((ModifyDelta<(float x, float y)>)fixedHintDelta.Deltas.First(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint)).NewValue.ToVector();
                     firstGeneratedPoint = Managers.RecipeMap.path.fixedPathHints.First().evenlySpacedPointsFixedGraphics.points.First();
                 }
 
@@ -245,6 +270,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 var rotationEvents = reconstructionTimeline.GetRotationEventsForFixedHint(index);
                 var maxRotationIndex = rotationEvents.Any() ? rotationEvents.Max(d => d.index) : -1;
                 var maxEventIndex = Mathf.Max(maxDeletionIndex, maxRotationIndex);
+                //Plugin.PluginLogger.LogMessage($"Events for fixedHintIndex={index}, deletionEvents.Count:{deletionEvents.Count}, maxDeletionIndex={maxDeletionIndex}, maxEventIndex={maxEventIndex}");
                 for (var i = 0; i <= maxEventIndex; i++)
                 {
                     var anyDeletion = deletionEvents.Any(e => e.index == i);
@@ -254,8 +280,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                         var deletionEvent = deletionEvents.First(e => e.index == i);
                         var segmentLengthToDelete = deletionEvent.length;
                         var deleteFromEnd = deletionEvent.fromEnd;
-                        if (segmentLengthToDelete > 0)
+                        if (segmentLengthToDelete > 0.0001f)
                         {
+                            //Plugin.PluginLogger.LogMessage($"Deletion event at index: {i} (fixedHintIndex={index}), segmentLengthToDelete={segmentLengthToDelete}");
                             if (deleteFromEnd)
                             {
                                 //Round segment legnth to known void salt delete per grain to ensure exact matching of path length
@@ -275,6 +302,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     {
                         var rotationEvent = rotationEvents.First(e => e.index == i);
                         var currentPosition = Managers.RecipeMap.path.fixedPathHints[0].evenlySpacedPointsFixedGraphics.points[0];
+                        //Plugin.PluginLogger.LogMessage($"Rotation event at index: {i} (fixedHintIndex={index}), currentPosition:{currentPosition}");
                         RotatePath(rotationEvent.rotation, -currentPosition);
                     }
                 }
@@ -299,16 +327,16 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
 
             //Apply all other properties
-            potionState.ToList().ForEach(propertyDelta =>
+            potionState.ToList().ForEach(propertyDelta => //TODO for some reason vector2s are getting in here
             {
                 var propertyDeltaValue = propertyDelta.Value;
                 switch (propertyDelta.Key)
                 {
                     case DeltaProperty.IndicatorPosition:
-                        newRecipe.potionFromPanel.serializedPath.indicatorPosition = ((ModifyDelta<Vector2>)propertyDeltaValue).NewValue;
+                        newRecipe.potionFromPanel.serializedPath.indicatorPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
                         break;
                     case DeltaProperty.PathPosition:
-                        var pathPosition = ((ModifyDelta<Vector2>)propertyDeltaValue).NewValue;
+                        var pathPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
                         newRecipe.potionFromPanel.serializedPath.pathPosition = pathPosition;
                         if (offset != Vector3.zero)
                         {
@@ -321,10 +349,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                         }
                         break;
                     case DeltaProperty.IndicatorTargetPosition:
-                        newRecipe.potionFromPanel.serializedPath.indicatorTargetPosition = ((ModifyDelta<Vector2>)propertyDeltaValue).NewValue;
+                        newRecipe.potionFromPanel.serializedPath.indicatorTargetPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
                         break;
                     case DeltaProperty.FollowButtonTargetPosition:
-                        newRecipe.potionFromPanel.serializedPath.followButtonTargetObjectPosition = ((ModifyDelta<Vector2>)propertyDeltaValue).NewValue;
+                        newRecipe.potionFromPanel.serializedPath.followButtonTargetObjectPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
                         break;
                     case DeltaProperty.Rotation:
                         newRecipe.potionFromPanel.serializedPath.indicatorRotationValue = ((ModifyDelta<float>)propertyDeltaValue).NewValue;

@@ -32,8 +32,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta
             {
                 string otherValue => 
                     string.Equals(NewValue as string, otherValue),
-                List<Vector3> otherValue => 
-                    (NewValue as List<Vector3>)?.SequenceEqual(otherValue) ?? otherValue == null,
+                float otherValue =>
+                    Mathf.Abs((NewValue as float?).Value - otherValue) < 0.00001,
+                List<string> otherValue => 
+                    (NewValue as List<string>)?.SequenceEqual(otherValue) ?? otherValue == null,
                 _ => EqualityComparer<T>.Default.Equals(NewValue, delta.NewValue),
             };
         }

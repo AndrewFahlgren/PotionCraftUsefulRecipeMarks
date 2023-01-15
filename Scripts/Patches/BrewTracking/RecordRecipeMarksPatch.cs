@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using PotionCraft.ManagersSystem.Potion;
+using PotionCraft.ObjectBased.RecipeMap.Path;
 using PotionCraft.ScriptableObjects;
 using PotionCraft.ScriptableObjects.Potion;
 using PotionCraft.ScriptableObjects.Salts;
@@ -25,6 +26,15 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
 
         [HarmonyPatch(typeof(RecipeMarksSubManager), "AddSpoonMark")]
         public class RecipeMarksSubManager_AddSpoonMark
+        {
+            static void Postfix()
+            {
+                Ex.RunSafe(() => DeltaRecordingService.RecordRecipeMarkInfo());
+            }
+        }
+
+        [HarmonyPatch(typeof(TeleportationFixedHint), "SetIndicatorPosition")]
+        public class TeleportationFixedHint_SetIndicatorPosition
         {
             static void Postfix()
             {

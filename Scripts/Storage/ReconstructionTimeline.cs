@@ -58,10 +58,19 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
                                     var eventRecipeMark = allRecipeMarks[prt.Key];
                                     var deleteFromEnd = eventRecipeMark.type == SerializedRecipeMark.Type.Salt && eventRecipeMark.stringValue == DeltaRecordingService.VoidSaltName;
                                     var deletedLength = currentLength - lengthDelta.NewValue;
+                                    //Plugin.PluginLogger.LogMessage($"GetPathDeletionEvents for fixedHintIndex={fixedHintIndex}, deletedLength={deletedLength}");
                                     if (deletedLength < 0)
                                     {
                                         throw new Exception("Looks like someone added a new salt. This mod simply cannot handle paths which increase in length.");
                                     }
+
+                                    //Floating point math can cause some issues like this
+                                    if (deletedLength < 0.0001f)
+                                    {
+                                         return;
+                                    }
+
+                                    //Plugin.PluginLogger.LogMessage($"GetPathDeletionEvents for fixedHintIndex={fixedHintIndex}, prt.Key={prt.Key}, addedIndex={addedIndex}");
 
                                     if (prt.Key >= addedIndex)
                                     {
@@ -89,8 +98,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
             PathRotationTimeline.Where(prt => prt.Key >= addedIndex && prt.Key < nextAddedIndex)
                                 .ToList()
                                 .ForEach(prt => AddRotationEvent(prt.Key, prt.Value, rotationEvents));
-
-            rotationEvents.ForEach(re => Plugin.PluginLogger.LogMessage(re));
 
             return rotationEvents;
         }

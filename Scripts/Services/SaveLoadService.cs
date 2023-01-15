@@ -26,6 +26,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 Managers.Potion.recipeBook.bookmarkControllersGroupController.onBookmarksRearranged.AddListener(RecipeBookUIService.BookmarksRearranged);
                 Managers.Potion.recipeBook.onPageChanged.AddListener(RecipeBookUIService.UpdateRecipeMarksForPageChange);
                 Managers.Potion.recipeBook.onActiveStateChanged.AddListener(RecipeBookUIService.UpdateRecipeMarksForStateChanged);
+                Managers.Potion.potionCraftPanel.onPotionUpdated.AddListener(DeltaRecordingService.ClearPreviousSavedPotionRecipeMarkInfo);
             }
         }
 
@@ -37,6 +38,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             StaticStorage.CurrentPotionRecipeMarkInfos.Clear();
             StaticStorage.CurrentPotionState.Clear();
             StaticStorage.CurrentRecipeMarkInfo = null;
+            StaticStorage.PreviousPotionRecipeMarkInfo = null;
             StaticStorage.SelectedRecipePotionState?.Clear();
             StaticStorage.SelectedRecipeMarkIndex = 0;
             StaticStorage.RecipeMarkInfos.Clear();
