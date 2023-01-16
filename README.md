@@ -6,11 +6,11 @@ NOTE: this only works with newly saved recipes. Pre-mod recipes will not have th
 
 Just click on a recipe mark and then press continue brewing:
 
-![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/BrewFromHere_Icon.png?raw=true)
+![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/BrewFromHere_Icon.PNG?raw=true)
 
 Install [Recipe Waypoints](https://github.com/AndrewFahlgren/PotionCraftRecipeWaypoints) to see where you will go when you brew:
 
-![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/BrewFromHere_UseRecipeWaypoints.png?raw=true)
+![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/BrewFromHere_UseRecipeWaypoints.PNG?raw=true)
 
 
 ## Showcase Video
