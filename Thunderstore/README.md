@@ -1,18 +1,19 @@
 # Brew From Here
-A mod that lets you to organize bookmarks into groups! Compatible with Potion Craft v1.0!
+A mod that lets you continue brewing from any recipe mark! Compatible with Potion Craft v1.0!
 
-Drag bookmarks into the page cutout to create a bookmark group:
-![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/Bookmark_Organizer_Icon_Alternate.PNG?raw=true)
+NOTE: this only works with newly saved recipes. Pre-mod recipes will not have this functionality. This is because not enough information is currently stored to recreate a recipe and new information must be gathered while brewing.
+
+Just click on a recipe mark and then press continue brewing:
+![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/BrewFromHere_Icon.PNG?raw=true)
 
 
-Easily switch between bookmarks within the group:
-![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/Bookmark_Organizer_MainImage.PNG?raw=true)
-![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/Bookmark_Organizer_SecondImage.PNG?raw=true)
+Install [Recipe Waypoints](https://potion-craft.thunderstore.io/package/AndrewFahlgren/Recipe_Waypoints/) to see where you will go when you brew:
+![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/BrewFromHere_UseRecipeWaypoints.PNG?raw=true)
 
 
 ## Showcase Video
 
-See this [showcase video](https://youtu.be/n5G4lWEsdjg) to see everything this mod does.
+See this [showcase video](https://youtu.be/ZsfVE3ipVTc) to see everything this mod does.
 
 
 ## Installation (game, automated)

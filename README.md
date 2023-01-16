@@ -4,10 +4,17 @@ A mod that lets you continue brewing from any recipe mark! Compatible with Potio
 
 NOTE: this only works with newly saved recipes. Pre-mod recipes will not have this functionality. This is because not enough information is currently stored to recreate a recipe and new information must be gathered while brewing.
 
-Just click on a recipe mark and then press continue brewing!
+Just click on a recipe mark and then press continue brewing:
+
+![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/BrewFromHere_Icon.png?raw=true)
+
+Install [Recipe Waypoints](https://github.com/AndrewFahlgren/PotionCraftRecipeWaypoints) to see where you will go when you brew:
+
+![image](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/blob/master/Images/BrewFromHere_UseRecipeWaypoints.png?raw=true)
+
 
 ## Showcase Video
-See this [showcase video](https://youtu.be/n5G4lWEsdjg) to see everything this mod does
+See this [showcase video](https://youtu.be/ZsfVE3ipVTc) to see everything this mod does
 
 ## Installation
 
