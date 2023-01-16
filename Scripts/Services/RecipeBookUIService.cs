@@ -175,5 +175,14 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 StaticStorage.RecipeMarkInfos = newRecipeMarkInfos.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             });
         }
+
+        public static void RemoveRecipeMarkForDeletedRecipe(Potion recipe)
+        {
+            var recipeIndex = Managers.Potion.recipeBook.savedRecipes.IndexOf(recipe);
+            if (StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex))
+            {
+                StaticStorage.RecipeMarkInfos.Remove(recipeIndex);
+            }
+        }
     }
 }
