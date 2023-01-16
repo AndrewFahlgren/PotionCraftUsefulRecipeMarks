@@ -1,10 +1,6 @@
-﻿using PotionCraft.InputSystem;
-using PotionCraft.ObjectBased.UIElements.Bookmarks;
-using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
-using PotionCraft.ScriptableObjects;
+﻿using PotionCraft.ScriptableObjects.Potion;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
 {
@@ -25,10 +21,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
 
         public static Dictionary<int, Dictionary<int, RecipeMarkInfo>> RecipeMarkInfos = new();
 
-        public class SavedStaticStorage
-        {
-            public List<string> ErrorLog { get; set; }
-            public string ModVersion { get; set; }
-        }
+        #region Old bookmark organizer failsafe fields
+
+        public static bool BookmarkOrganizerOldVersionInstalled;
+        public static List<Potion> RecipeIndexes;
+
+        #endregion
     }
 }

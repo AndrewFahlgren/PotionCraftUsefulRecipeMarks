@@ -162,6 +162,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             {
                 var oldRecipeMarkInfos = StaticStorage.RecipeMarkInfos.ToList();
                 var newRecipeMarkInfos = new List<KeyValuePair<int, Dictionary<int, RecipeMarkInfo>>>();
+                var newRecipeList = new List<Potion>();
                 for (var newIndex = 0; newIndex < intList.Count; newIndex++)
                 {
                     var oldIndex = intList[newIndex];
@@ -171,8 +172,15 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     {
                         newRecipeMarkInfos.Add(new(newIndex, oldRecipeMarkInfo.Value));
                     }
+
+                    //Keep an up to date recipe list with indexes to use for the old bookmark organizer failsafe
+                    if (StaticStorage.BookmarkOrganizerOldVersionInstalled)
+                    {
+                        newRecipeList.Add(StaticStorage.RecipeIndexes[oldIndex]);
+                    }
                 }
                 StaticStorage.RecipeMarkInfos = newRecipeMarkInfos.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                StaticStorage.RecipeIndexes = newRecipeList;
             });
         }
 
@@ -183,6 +191,29 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             {
                 StaticStorage.RecipeMarkInfos.Remove(recipeIndex);
             }
+        }
+
+        public static void DoOldBookmarkOrganizerFailsfe()
+        {
+            if (!StaticStorage.BookmarkOrganizerOldVersionInstalled) return;
+
+            var allRecipesList = Managers.Potion.recipeBook.savedRecipes;
+            var intList = new List<int>();
+            var shouldRearrange = false;
+            for (int i = 0; i < allRecipesList.Count; i++)
+            {
+                if (StaticStorage.RecipeIndexes[i] == allRecipesList[i])
+                {
+                    intList.Add(i);
+                }
+                else
+                {
+                    shouldRearrange = true;
+                    intList.Add(StaticStorage.RecipeIndexes.IndexOf(allRecipesList[i]));
+                }
+            }
+            if (!shouldRearrange) return;
+            BookmarksRearranged(null, intList);
         }
     }
 }

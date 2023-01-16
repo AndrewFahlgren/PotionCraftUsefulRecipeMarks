@@ -1,11 +1,7 @@
-﻿using PotionCraft.InputSystem;
-using PotionCraft.ManagersSystem;
-using PotionCraft.ObjectBased.UIElements.Bookmarks;
-using PotionCraftUsefulRecipeMarks.Scripts.Services;
+﻿using PotionCraft.ManagersSystem;
+using PotionCraft.ScriptableObjects.Potion;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 
 namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
@@ -20,22 +16,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
         public Dictionary<DeltaProperty, BaseDelta> SelectedRecipePotionState => StaticStorage.SelectedRecipePotionState;
         public int SelectedRecipeMarkIndex => StaticStorage.SelectedRecipeMarkIndex;
         public int SelectedRecipeIndex => StaticStorage.SelectedRecipeIndex;
-
-        void Update()
-        {
-            //if (StaticStorage.HotkeyDown == null || StaticStorage.HotkeyUp == null) return;
-            //if (Commands.roomDown.State == State.JustDowned)
-            //{
-            //    RecipeBookService.FlipPageToNextGroup(false);
-            //    StaticStorage.HotkeyDown.SetAction(repeater => RecipeBookService.FlipPageToNextGroup(false)).StopWhen(() => !CanHotkeysBeUsed());
-            //}
-            //else if (Commands.roomUp.State == State.JustDowned)
-            //{ 
-            //    RecipeBookService.FlipPageToNextGroup(true);
-            //    StaticStorage.HotkeyUp.SetAction(repeater => RecipeBookService.FlipPageToNextGroup(true)).StopWhen(() => !CanHotkeysBeUsed());
-            //}
-        }
-
-        private bool CanHotkeysBeUsed() => !Managers.Input.HasInputGotToBeDisabled();
+        public List<Potion> RecipeIndexes => StaticStorage.RecipeIndexes;
     }
 }

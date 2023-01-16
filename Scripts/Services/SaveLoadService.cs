@@ -44,5 +44,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             StaticStorage.SelectedRecipeIndex = 0;
             StaticStorage.RecipeMarkInfos.Clear();
         }
+
+        public static void UpdateFailsafeListOnLoad()
+        {
+            if (!StaticStorage.BookmarkOrganizerOldVersionInstalled) return;
+            StaticStorage.RecipeIndexes = Managers.Potion.recipeBook.savedRecipes.ToList();
+        }
     }
 }
