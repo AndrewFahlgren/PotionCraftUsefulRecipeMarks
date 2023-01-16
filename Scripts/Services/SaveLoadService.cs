@@ -41,6 +41,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             StaticStorage.PreviousPotionRecipeMarkInfo = null;
             StaticStorage.SelectedRecipePotionState?.Clear();
             StaticStorage.SelectedRecipeMarkIndex = 0;
+            StaticStorage.SelectedRecipeIndex = 0;
             StaticStorage.RecipeMarkInfos.Clear();
         }
     }

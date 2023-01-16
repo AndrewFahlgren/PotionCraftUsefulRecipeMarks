@@ -1,10 +1,10 @@
 ﻿{
   "$schema": "https://github.com/beat-saber-modding-group/BSIPA-MetadataFileSchema/blob/master/Schema.json",
-  "author": "com.fahlgorithm.potioncraftusefulrecipemarks",
-  "description": "A mod that makes the recipe marks on the right recipe page useful!",
+  "author": "com.fahlgorithm.potioncraftbrewfromhere",
+  "description": "A mod that allows you to continue brewing from any recipe mark!",
   "gameVersion": "1.0.5.0",
-  "id": "PotionCraftUsefulRecipeMarks",
-  "name": "PotionCraftUsefulRecipeMarks",
+  "id": "PotionCraftBrewFromHere",
+  "name": "PotionCraftBrewFromHere",
   "version": "1.0.5.0",
   "dependsOn": {}
 

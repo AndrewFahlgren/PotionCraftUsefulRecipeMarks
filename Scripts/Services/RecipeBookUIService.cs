@@ -27,11 +27,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
 
             var markIndex = recipeMark.currentMarkIndex;
-            UpdateRecipeBookPageForSelectedRecipeMark(recipeIndex, markIndex);
-        }
 
-        public static void UpdateRecipeBookPageForSelectedRecipeMark(int recipeIndex, int markIndex)
-        {
             //Disable reconstruction for alchemy machine recipes
             if (IsAlchemyMachineRecipe(Managers.Potion.recipeBook.savedRecipes[recipeIndex])) return;
 
@@ -44,6 +40,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 return;
             }
 
+            UpdateRecipeBookPageForSelectedRecipeMark(recipeIndex, markIndex);
+        }
+
+        public static void UpdateRecipeBookPageForSelectedRecipeMark(int recipeIndex, int markIndex)
+        {
             var recipe = RecipeReconstructionService.GetPotionForRecipeMark(recipeIndex, markIndex);
 
             if (recipe == null) return;
@@ -69,15 +70,14 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             if (isReconstructed)
             {
                 DisableRecipeWaypointsUIElements(rightPageContent);
-                //Make sure the brew potion button is active (this can be inactive if recipe waypoints is installed)
-                brewPotionButton.gameObject.SetActive(true);
             }
 
             //Lock down the brew potion button for reconstructed recipes
-            brewPotionButton.Locked = isReconstructed;
+            if (isReconstructed) brewPotionButton.Locked = true;
 
             //Set the selected recipe mark index for later use if the player decides to continue brewing
             StaticStorage.SelectedRecipeMarkIndex = markIndex;
+            StaticStorage.SelectedRecipeIndex = recipeIndex;
         }
 
         private static void EnableDisableMark(RecipeBookRecipeMark mark, bool enabled)
@@ -103,13 +103,22 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void UpdateRecipeMarksForStateChanged(bool shown)
         {
-            if (!shown) return;
-            DisableOldRecipeMarks(Managers.Potion.recipeBook);
+            Ex.RunSafe(() =>
+            {
+                if (!shown) return;
+                var currentPageIndex = Managers.Potion.recipeBook.currentPageIndex;
+                if (StaticStorage.SelectedRecipeMarkIndex > 0
+                    && StaticStorage.SelectedRecipeIndex == currentPageIndex
+                    && StaticStorage.RecipeMarkInfos.ContainsKey(currentPageIndex))
+                {
+                    UpdateRecipeBookPageForSelectedRecipeMark(currentPageIndex, StaticStorage.SelectedRecipeMarkIndex);
+                }
+            });
         }
 
         public static void UpdateRecipeMarksForPageChange(int _, int _0)
         {
-            DisableOldRecipeMarks(Managers.Potion.recipeBook);
+            Ex.RunSafe(() => DisableOldRecipeMarks(Managers.Potion.recipeBook));
         }
 
         public static void DisableOldRecipeMarks(Book book)
@@ -127,6 +136,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var allMarks = visibleMarks.Values.SelectMany(v => v).ToList();
             var recipeHasSavedData = StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex);
             StaticStorage.SelectedRecipeMarkIndex = allMarks.Count - 1;
+            StaticStorage.SelectedRecipeIndex = recipeIndex;
             allMarks.ForEach(mark =>
             {
                 //Only grey out recipe marks if there are any recipe marks with good data
@@ -139,8 +149,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         {
             var waypointToggleButton = rightPageContent.transform.Find("WaypointToggleButton");
             waypointToggleButton?.gameObject?.SetActive(false);
-            var viewWaypointButton = rightPageContent.transform.Find("BrewPotionButton(Clone)");
-            viewWaypointButton?.gameObject?.SetActive(false);
         }
 
         public static bool IsAlchemyMachineRecipe(Potion recipe)
@@ -150,19 +158,22 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void BookmarksRearranged(BookmarkController _, List<int> intList)
         {
-            var oldRecipeMarkInfos = StaticStorage.RecipeMarkInfos.ToList();
-            var newRecipeMarkInfos = new List<KeyValuePair<int, Dictionary<int, RecipeMarkInfo>>>();
-            for (var newIndex = 0; newIndex < intList.Count; newIndex++)
+            Ex.RunSafe(() =>
             {
-                var oldIndex = intList[newIndex];
-                //This will recreate the old ignored list making sure to update any indexes along the way
-                var oldRecipeMarkInfo = oldRecipeMarkInfos.FirstOrDefault(rmi => rmi.Key == oldIndex);
-                if (!oldRecipeMarkInfo.Equals(default(KeyValuePair<int, Dictionary<int, RecipeMarkInfo>>)))
+                var oldRecipeMarkInfos = StaticStorage.RecipeMarkInfos.ToList();
+                var newRecipeMarkInfos = new List<KeyValuePair<int, Dictionary<int, RecipeMarkInfo>>>();
+                for (var newIndex = 0; newIndex < intList.Count; newIndex++)
                 {
-                    newRecipeMarkInfos.Add(new (oldRecipeMarkInfo.Key, oldRecipeMarkInfo.Value));
+                    var oldIndex = intList[newIndex];
+                    //This will recreate the old ignored list making sure to update any indexes along the way
+                    var oldRecipeMarkInfo = oldRecipeMarkInfos.FirstOrDefault(rmi => rmi.Key == oldIndex);
+                    if (!oldRecipeMarkInfo.Equals(default(KeyValuePair<int, Dictionary<int, RecipeMarkInfo>>)))
+                    {
+                        newRecipeMarkInfos.Add(new(newIndex, oldRecipeMarkInfo.Value));
+                    }
                 }
-            }
-            StaticStorage.RecipeMarkInfos = newRecipeMarkInfos.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                StaticStorage.RecipeMarkInfos = newRecipeMarkInfos.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            });
         }
     }
 }

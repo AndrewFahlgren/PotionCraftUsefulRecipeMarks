@@ -1,4 +1,4 @@
-# Useful Recipe Marks
+# Brew From Here
 
 A mod that lets you continue brewing from any recipe mark! Compatible with Potion Craft v1.0!
 
@@ -18,9 +18,9 @@ If you are not sure where your Potion Craft steam directory is you can find out 
 - Download and install [BepInEx 5.x 64 bit](https://github.com/BepInEx/BepInEx/releases/latest)
   - The contents of the BepInEx zip should be extracted to your PotionCraft steam directory.
   - If properly installed, you should see a `winhttp.dll` file and `BepInEx` folder alongside your `Potion Craft.exe`
-- Download and install [Useful Recipe Marks](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/releases/latest/)
-  - The contents of the UsefulRecipeMarks zip should be extracted to your PotionCraft steam directory.
-  - If properly installed, you should have a `PotionCraftUsefulRecipeMarks.dll` file at `Potion Craft/BepInEx/plugins`
+- Download and install [Brew From Here](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/releases/latest/)
+  - The contents of the BrewFromHere zip should be extracted to your PotionCraft steam directory.
+  - If properly installed, you should have a `PotionCraftBrewFromHere.dll` file at `Potion Craft/BepInEx/plugins`
   
 ### Automatic installation with [Thunderstore Mod Manager](https://www.overwolf.com/app/Thunderstore-Thunderstore_Mod_Manager) or [r2modman mod manager](https://thunderstore.io/package/ebkr/r2modman/)
 

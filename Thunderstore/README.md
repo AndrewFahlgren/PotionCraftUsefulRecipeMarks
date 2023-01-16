@@ -1,4 +1,4 @@
-# Bookmark Organizer
+# Brew From Here
 A mod that lets you to organize bookmarks into groups! Compatible with Potion Craft v1.0!
 
 Drag bookmarks into the page cutout to create a bookmark group:
@@ -30,9 +30,9 @@ If you are not sure where your Potion Craft steam directory is you can find out 
 - Download and install [BepInEx 5.x 64 bit](https://github.com/BepInEx/BepInEx/releases)
   - The contents of the BepInEx zip should be extracted to your PotionCraft steam directory.
   - If properly installed, you should see a `winhttp.dll` file and `BepInEx` folder alongside your `Potion Craft.exe`
-- Download and install [UsefulRecipeMarks](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/releases/)
-  - The contents of the UsefulRecipeMarks zip should be extracted to your PotionCraft steam directory.
-  - If properly installed, you should have a `PotionCraftUsefulRecipeMarks.dll` file at `Potion Craft/BepInEx/plugins`
+- Download and install [Brew From Here](https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks/releases/)
+  - The contents of the BrewFromHere zip should be extracted to your PotionCraft steam directory.
+  - If properly installed, you should have a `PotionCraftBrewFromHere.dll` file at `Potion Craft/BepInEx/plugins`
   
 ### Steam Deck Installation
 See [this guide](https://docs.google.com/document/d/1Y3PDeMaffkh7x4U3j46YZ9K6AhM2EvRF9v3mAGBFzW4) for installing Potion Craft mods on the Steam Deck
@@ -45,3 +45,5 @@ I am making a series of mods which make recipes easier to use. All of these mods
 [Recipe Waypoints](https://potion-craft.thunderstore.io/package/AndrewFahlgren/Recipe_Waypoints/) - Allows you to see where your waypoint recipes (those with no effects or are far away from their last effect) are on the map so you know where you are going when you continue brewing from that recipe.
 
 [Pour Back In](https://potion-craft.thunderstore.io/package/AndrewFahlgren/Pour_Back_In/) - Makes your potions work just like recipes. Pour potions back in the cauldron to continue where you left off. You can also finish potions before you add any effects so you can come back to them later just like a waypoint recipe.
+
+[Bookmark Organizer](https://potion-craft.thunderstore.io/package/AndrewFahlgren/Bookmark_Organizer/) - Lets you organize your recipes into groups! Save space in your recipe book and find the recipe you are looking for faster!

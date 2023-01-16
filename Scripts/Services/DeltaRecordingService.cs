@@ -111,8 +111,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void ClearPreviousSavedPotionRecipeMarkInfo(bool potionUpdated)
         {
-            if (!potionUpdated) return;
-            StaticStorage.PreviousPotionRecipeMarkInfo = null;
+            Ex.RunSafe(() =>
+            {
+                if (!potionUpdated) return;
+                StaticStorage.PreviousPotionRecipeMarkInfo = null;
+            });
         }
 
         public static void SetupInitialInfo()

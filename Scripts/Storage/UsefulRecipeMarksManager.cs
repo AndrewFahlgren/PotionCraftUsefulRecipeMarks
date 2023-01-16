@@ -19,6 +19,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
         public Dictionary<int, RecipeMarkInfo> PreviousPotionRecipeMarkInfo => StaticStorage.PreviousPotionRecipeMarkInfo;
         public Dictionary<DeltaProperty, BaseDelta> SelectedRecipePotionState => StaticStorage.SelectedRecipePotionState;
         public int SelectedRecipeMarkIndex => StaticStorage.SelectedRecipeMarkIndex;
+        public int SelectedRecipeIndex => StaticStorage.SelectedRecipeIndex;
 
         void Update()
         {

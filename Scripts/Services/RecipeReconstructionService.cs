@@ -33,7 +33,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var recipeToClone = Managers.Potion.recipeBook.savedRecipes[recipeIndex];
 
             //Do not clone the recipe if the last mark is selected. Instead return the original recipe;
-            if (recipeToClone.potionFromPanel.recipeMarks.Count == recipeMarkIndex - 1)
+            if (recipeToClone.potionFromPanel.recipeMarks.Count - 1 == recipeMarkIndex)
             {
                 return recipeToClone;
             }

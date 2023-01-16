@@ -32,6 +32,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
             public Dictionary<int, RecipeMarkInfo> PreviousPotionRecipeMarkInfo { get; set; }
             public Dictionary<DeltaProperty, BaseDelta> SelectedRecipePotionState { get; set; }
             public int SelectedRecipeMarkIndex { get; set; }
+            public int SelectedRecipeIndex { get; set; }
             public Dictionary<int, Dictionary<int, RecipeMarkInfo>> RecipeMarkInfos { get; set; }
             public List<string> ErrorLog { get; set; }
             public string Version { get; set; }
@@ -50,6 +51,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
                 PreviousPotionRecipeMarkInfo = StaticStorage.PreviousPotionRecipeMarkInfo,
                 SelectedRecipePotionState = StaticStorage.SelectedRecipePotionState,
                 SelectedRecipeMarkIndex = StaticStorage.SelectedRecipeMarkIndex,
+                SelectedRecipeIndex = StaticStorage.SelectedRecipeIndex,
                 RecipeMarkInfos = StaticStorage.RecipeMarkInfos,
                 ErrorLog = StaticStorage.ErrorLog,
                 Version = Plugin.PLUGIN_VERSION
@@ -86,6 +88,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
             StaticStorage.PreviousPotionRecipeMarkInfo = loadedSaveState.PreviousPotionRecipeMarkInfo;
             StaticStorage.SelectedRecipePotionState = loadedSaveState.SelectedRecipePotionState;
             StaticStorage.SelectedRecipeMarkIndex = loadedSaveState.SelectedRecipeMarkIndex;
+            StaticStorage.SelectedRecipeIndex = loadedSaveState.SelectedRecipeIndex;
             StaticStorage.RecipeMarkInfos = loadedSaveState.RecipeMarkInfos;
             StaticStorage.ErrorLog = loadedSaveState.ErrorLog;
 
