@@ -14,7 +14,7 @@ namespace PotionCraftUsefulRecipeMarks
     public class Plugin : BaseUnityPlugin
     {
         public const string PLUGIN_GUID = "com.fahlgorithm.potioncraftbrewfromhere";
-        public const string PLUGIN_VERSION = "1.0.5.0";
+        public const string PLUGIN_VERSION = "1.0.5.1";
 
         public static ManualLogSource PluginLogger {get; private set; }
 

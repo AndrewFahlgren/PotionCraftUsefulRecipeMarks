@@ -44,10 +44,19 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var lowestIngredientIndex = -1;
             var ignoreFixedHintIndexes = new List<int>();
             int? previousAddedIngredients = null;
+            var oldRecipeIndex = 0;
 
             for (var i = recipeMarkIndex; i >= 0; i--)
             {
-                var curRecipeMarkDeltas = recipeDeltas[i];
+                if (!recipeDeltas.TryGetValue(i, out var curRecipeMarkDeltas))
+                {
+                    if (oldRecipeIndex == 0) oldRecipeIndex = i;
+                    continue;
+                }
+
+                //For newly saved recipes which were continued from old ones its important that we move up the zero mark starting index to the actual starting index
+                if (i == 0) i = oldRecipeIndex;
+
                 curRecipeMarkDeltas.Deltas.ForEach(delta =>
                 {
                     if (!potionState.ContainsKey(delta.Property))
@@ -87,7 +96,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                         if (addDelta.Property == DeltaProperty.FixedHints)
                         {
                             //This fixed hint was deleted by void salt in the future. Ignore this adddelta.
-                            if (ignoreFixedHintIndexes.Contains(curIndex)) return;
+                            if (ignoreFixedHintIndexes.Contains(curIndex))
+                            {
+                                //Plugin.PluginLogger.LogInfo($"Returning for ignored index {i}, fixedHintIndex={curIndex}");
+                                return;
+                            }
 
                             if (!potionState.TryGetValue(DeltaProperty.PathAddedFixedHints, out BaseDelta existingPathAddedFixedHints))
                                 existingPathAddedFixedHints = curRecipeMarkDeltas.Deltas.FirstOrDefault(d => d.Property == DeltaProperty.PathAddedFixedHints) as ModifyDelta<int>;
@@ -100,10 +113,18 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                                 var currentAddedIngredients = curRecipeMarkDeltas.Deltas.FirstOrDefault(d => d.Property == DeltaProperty.PathAddedFixedHints) as ModifyDelta<int>;
                                 if (currentAddedIngredients != null)
                                 {
+                                    //For old recipes for whatever reason this value is not dependible for the first record
+                                    //Just grab the fixed hint list instead
+                                    if (i == oldRecipeIndex)
+                                    {
+                                        currentAddedIngredients.NewValue = ((ListDelta)curRecipeMarkDeltas.Deltas.FirstOrDefault(d => d.Property == DeltaProperty.FixedHints))?.AddDeltas?.Count ?? currentAddedIngredients.NewValue;
+                                    }
+
                                     if (previousAddedIngredients != null && currentAddedIngredients.NewValue > previousAddedIngredients)
                                     {
                                         //At this point everything referring to the latest index should be ignored since that ingredient was fully deleted by void salt
                                         ignoreFixedHintIndexes.Add(curIndex);
+                                        //Plugin.PluginLogger.LogInfo($"Returning for void salt index {i}, fixedHintIndex={curIndex}");
                                         return;
                                     }
                                     previousAddedIngredients = currentAddedIngredients.NewValue;
@@ -111,18 +132,29 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                                 var finalIngredientIndex = existingAddedIngredients - 1;
 
                                 //This ingredient may have been deleted with void salt. If this is the case ignore this added ingredient.
-                                if (curIndex > finalIngredientIndex) return;
+                                if (curIndex > finalIngredientIndex)
+                                {
+                                    //Plugin.PluginLogger.LogInfo($"Returning for deleted void salt index {i}, fixedHintIndex={curIndex}");
+                                    return;
+                                }
 
                                 //Check to see if we have already found enough ingredients to satisfy the selected recipe mark
                                 if (potionState.TryGetValue(DeltaProperty.PathFixedHintsCount, out BaseDelta existingPathFixedHintsCount))
                                 {
                                     lowestIngredientIndex = finalIngredientIndex - ((ModifyDelta<int>)existingPathFixedHintsCount).NewValue + 1;
-                                    if (curIndex < lowestIngredientIndex) return;
+                                    if (curIndex < lowestIngredientIndex)
+                                    {
+                                        //Plugin.PluginLogger.LogInfo($"Returning for too low index {i}, fixedHintIndex={curIndex}");
+                                        return;
+                                    }
                                 }
                             }
 
                             addFixedHintDeltaToTimeline(addDelta);
+                            //Plugin.PluginLogger.LogInfo($"Processing fixed hint add delta for index {i}, fixedHintIndex={curIndex}");
                         }
+
+
 
                         var existingIndexDelta = existingListDelta.AddDeltas.FirstOrDefault(d => d.Index == curIndex);
                         if (existingIndexDelta == null)
@@ -153,6 +185,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 });
 
                 reconstructionTimeline.AddBasePropertyInformationFromDeltas(recipeToClone.potionFromPanel.recipeMarks, i, curRecipeMarkDeltas.Deltas);
+
+                //Fix our index manipulation from earlier
+                if (i == oldRecipeIndex) i = 0;
             }
 
             var fixedHints = (ListDelta)potionState[DeltaProperty.FixedHints];
@@ -227,7 +262,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
                 var oldSerializedPathFixedHints = oldSerializedPath.NewValue.fixedPathPoints.ToList();
                 //Remove any fixed paths which are gone by this point
-                for (var i = oldSerializedPathFixedHints.Count; i >= 0; i--)
+                for (var i = oldSerializedPathFixedHints.Count - 1; i >= 0; i--)
                 {
                     if (oldFixedHintsIndexes.Contains(i)) continue;
                     oldSerializedPath.NewValue.fixedPathPoints.RemoveAt(i);
@@ -243,15 +278,13 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             foreach (var fixedHintDelta in deltaFixedHints.AddDeltas)
             {
                 var index = fixedHintDelta.Index;
-
-                var fixedHintTimeline = reconstructionTimeline.FixedHintTimelines[index];
-                var ingredientName = fixedHintTimeline.IngredientName;
-                var grindPercent = fixedHintTimeline.GrindPercent;
-
+                reconstructionTimeline.FixedHintTimelines.TryGetValue(index, out var fixedHintTimeline);
 
                 var isOldFixedHint = oldFixedHintsIndexes.Contains(fixedHintDelta.Index);
                 if (!isOldFixedHint)
                 {
+                    var ingredientName = fixedHintTimeline.IngredientName;
+                    var grindPercent = fixedHintTimeline.GrindPercent;
                     var ingredient = Ingredient.GetByName(ingredientName);
 
                     Managers.RecipeMap.path.potionComponentHintPainter.ShowIngredientHint(false, 0.0f, dummyInteractionObject, ingredient, grindPercent);
@@ -263,6 +296,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     connectionPoint = ((ModifyDelta<(float x, float y)>)fixedHintDelta.Deltas.First(d => d.Property == DeltaProperty.FixedHint_ConnectionPoint)).NewValue.ToVector();
                     firstGeneratedPoint = Managers.RecipeMap.path.fixedPathHints.First().evenlySpacedPointsFixedGraphics.points.First();
                 }
+
+                if (fixedHintTimeline == null) continue;
 
                 //Run through all path events in order to manipulate the path correctly
                 var deletionEvents = reconstructionTimeline.GetPathDeletionEvents(recipeToClone.potionFromPanel.recipeMarks, index);

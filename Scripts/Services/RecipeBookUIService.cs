@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using static PotionCraft.SaveLoadSystem.ProgressState;
 
 namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 {
@@ -34,20 +35,33 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             //Do nothing for potion base marks
             if (markIndex == 0) return;
 
+            var indexOverride = -1;
             if (!RecipeReconstructionService.MarkHasSavedData(recipeIndex, markIndex))
             {
-                Notification.ShowText("This recipe mark is missing critical information", "You can only continue brewing from new recipe marks", Notification.TextType.EventText);
-                return;
+                //Check if this is the base mark for a half old recipe
+                if (RecipeReconstructionService.MarkHasSavedData(recipeIndex, markIndex + 1))
+                {
+                    indexOverride = 0;
+                }
+                else
+                {
+                    Notification.ShowText("This recipe mark is missing critical information", "You can only continue brewing from new recipe marks", Notification.TextType.EventText);
+                    return;
+                }
             }
 
-            UpdateRecipeBookPageForSelectedRecipeMark(recipeIndex, markIndex);
+            UpdateRecipeBookPageForSelectedRecipeMark(recipeIndex, markIndex, indexOverride);
         }
 
-        public static void UpdateRecipeBookPageForSelectedRecipeMark(int recipeIndex, int markIndex)
+        public static void UpdateRecipeBookPageForSelectedRecipeMark(int recipeIndex, int markIndex, int markIndexOverride = -1)
         {
-            var recipe = RecipeReconstructionService.GetPotionForRecipeMark(recipeIndex, markIndex);
+            var recipe = RecipeReconstructionService.GetPotionForRecipeMark(recipeIndex, markIndexOverride == -1 ? markIndex : markIndexOverride);
 
             if (recipe == null) return;
+
+            //Set the selected recipe mark index for later use if the player decides to continue brewing
+            StaticStorage.SelectedRecipeMarkIndex = markIndex;
+            StaticStorage.SelectedRecipeIndex = recipeIndex;
 
             //Update page with reconstructed recipe
             var leftPage = Managers.Potion.recipeBook.curlPageController.frontLeftPage;
@@ -55,16 +69,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             leftPage.UpdatePageContent(PageContent.State.Filled, recipe);
             rightPage.UpdatePageContent(PageContent.State.Filled, recipe);
 
-            //Update recipe marks to show selection
-            var rightPageContent = (RecipeBookRightPageContent)rightPage.pageContent;
-            var visibleMarksDict = (Dictionary<int, List<RecipeBookRecipeMark>>)Traverse.Create(rightPageContent).Field("visibleMarks").GetValue();
-            var allMarks = visibleMarksDict.Values.SelectMany(v => v).ToList();
-            allMarks.ForEach(mark => EnableDisableMark(mark, mark.currentMarkIndex <= markIndex));
-
             var isReconstructed = recipe.potionFromPanel.recipeMarks.Count - 1 != markIndex;
 
             //Lock down the waypoint toggle button for reconstructed recipes if Recipe Waypoints is installed
             //Call update visual here to let recipe waypoints add the waypoint toggle button back in if needed
+            var rightPageContent = (RecipeBookRightPageContent)rightPage.pageContent;
             var brewPotionButton = (RecipeBookBrewPotionButton)Traverse.Create(rightPageContent).Field("brewPotionButton").GetValue();
             brewPotionButton.UpdateVisual();
             if (isReconstructed)
@@ -74,10 +83,28 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
             //Lock down the brew potion button for reconstructed recipes
             if (isReconstructed) brewPotionButton.Locked = true;
+        }
 
-            //Set the selected recipe mark index for later use if the player decides to continue brewing
-            StaticStorage.SelectedRecipeMarkIndex = markIndex;
-            StaticStorage.SelectedRecipeIndex = recipeIndex;
+        public static void EnableDisableMark(RecipeBookRecipeMark mark)
+        {
+            var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
+            if (StaticStorage.SelectedRecipeMarkIndex > 0
+                && StaticStorage.SelectedRecipeIndex == recipeIndex
+                && StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex))
+            {
+                EnableDisableMark(mark, mark.currentMarkIndex <= StaticStorage.SelectedRecipeMarkIndex);
+            }
+            else
+            {
+                var recipeHasSavedData = StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex);
+                var curMarkIndex = mark.currentMarkIndex;
+                //Only grey out recipe marks if there are any recipe marks with good data
+                var enabled = !recipeHasSavedData
+                              || (curMarkIndex != 0
+                                  && (RecipeReconstructionService.MarkHasSavedData(recipeIndex, curMarkIndex)
+                                      || RecipeReconstructionService.MarkHasSavedData(recipeIndex, curMarkIndex + 1)));
+                EnableDisableMark(mark, enabled);
+            }
         }
 
         private static void EnableDisableMark(RecipeBookRecipeMark mark, bool enabled)
@@ -107,11 +134,16 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             {
                 if (!shown) return;
                 var currentPageIndex = Managers.Potion.recipeBook.currentPageIndex;
+
                 if (StaticStorage.SelectedRecipeMarkIndex > 0
                     && StaticStorage.SelectedRecipeIndex == currentPageIndex
                     && StaticStorage.RecipeMarkInfos.ContainsKey(currentPageIndex))
                 {
                     UpdateRecipeBookPageForSelectedRecipeMark(currentPageIndex, StaticStorage.SelectedRecipeMarkIndex);
+                }
+                else
+                {
+                    DisableOldRecipeMarks(Managers.Potion.recipeBook);
                 }
             });
         }
@@ -126,23 +158,16 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             if (book is not RecipeBook recipeBook) return;
             var rightPage = recipeBook.curlPageController.frontRightPage;
             var rightPageContent = (RecipeBookRightPageContent)rightPage.pageContent;
-            var visibleMarks = (Dictionary<int, List<RecipeBookRecipeMark>>)Traverse.Create(rightPageContent).Field("visibleMarks").GetValue();
-            DisableOldRecipeMarks(visibleMarks);
+            DisableOldRecipeMarks(rightPageContent);
         }
 
-        public static void DisableOldRecipeMarks(Dictionary<int, List<RecipeBookRecipeMark>> visibleMarks)
+        public static void DisableOldRecipeMarks(RecipeBookRightPageContent rightPageContent)
         {
             var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
-            var allMarks = visibleMarks.Values.SelectMany(v => v).ToList();
-            var recipeHasSavedData = StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex);
-            StaticStorage.SelectedRecipeMarkIndex = allMarks.Count - 1;
+            var markCount = rightPageContent.currentPotion.potionFromPanel.recipeMarks.Count;
+            StaticStorage.SelectedRecipeMarkIndex = markCount - 1;
             StaticStorage.SelectedRecipeIndex = recipeIndex;
-            allMarks.ForEach(mark =>
-            {
-                //Only grey out recipe marks if there are any recipe marks with good data
-                var enabled = !recipeHasSavedData || RecipeReconstructionService.MarkHasSavedData(recipeIndex, mark.currentMarkIndex);
-                EnableDisableMark(mark, enabled);
-            });
+            Traverse.Create(rightPageContent).Method("UpdateRecipeMarks").GetValue();
         }
 
         private static void DisableRecipeWaypointsUIElements(RecipeBookRightPageContent rightPageContent)

@@ -98,8 +98,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
             {
                 var rightPage = Managers.Potion.recipeBook.curlPageController.frontRightPage;
                 var rightPageContent = (RecipeBookRightPageContent)rightPage.pageContent;
-                var visibleMarksDict = (Dictionary<int, List<RecipeBookRecipeMark>>)Traverse.Create(rightPageContent).Field("visibleMarks").GetValue();
-                RecipeBookUIService.DisableOldRecipeMarks(visibleMarksDict);
+                RecipeBookUIService.DisableOldRecipeMarks(rightPageContent);
             }
             else
             {

@@ -32,6 +32,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         public static void SetupInitialInfoForRecipe(RecipeBookRightPageContent rightPageContent)
         {
             var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
+            SetupInitialInfoForRecipe(rightPageContent.currentPotion.potionFromPanel, recipeIndex);
+        }
+
+        public static void SetupInitialInfoForRecipe(SerializedPotionFromPanel potionFromPanel, int recipeIndex)
+        {
             if (!StaticStorage.RecipeMarkInfos.TryGetValue(recipeIndex, out var recipeMarkInfos))
             {
                 //Our custom recipe breaks this initial index set so fix that here
@@ -42,7 +47,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 StaticStorage.CurrentPotionRecipeMarkInfos[0].Deltas.Add(new ModifyDelta<SerializedPath>
                 {
                     Property = DeltaProperty.OldSerializedPath,
-                    NewValue = rightPageContent.currentPotion.potionFromPanel.serializedPath
+                    NewValue = potionFromPanel.serializedPath
                 });
                 //Mark each pre mod fixed hint as an old fixed hint
                 var currentPotionStateFixedHintDeltas = ((ListDelta)StaticStorage.CurrentPotionState[DeltaProperty.FixedHints]).AddDeltas;
@@ -59,7 +64,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             }
 
             var recipeMarkIndex = StaticStorage.SelectedRecipeMarkIndex;
-            StaticStorage.CurrentPotionRecipeMarkInfos = recipeMarkInfos.Count > recipeMarkIndex 
+            StaticStorage.CurrentPotionRecipeMarkInfos = recipeMarkInfos.Count > recipeMarkIndex
                                                             ? recipeMarkInfos.Take(recipeMarkIndex + 1).ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
                                                             : recipeMarkInfos;
             var currentRecipeMarks = Managers.Potion.recipeMarks.GetMarksList();
