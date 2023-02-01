@@ -163,6 +163,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void DisableOldRecipeMarks(RecipeBookRightPageContent rightPageContent)
         {
+            if (Managers.Potion.recipeBook == null || rightPageContent?.currentPotion?.potionFromPanel == null) return;
             var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
             var markCount = rightPageContent.currentPotion.potionFromPanel.recipeMarks.Count;
             StaticStorage.SelectedRecipeMarkIndex = markCount - 1;

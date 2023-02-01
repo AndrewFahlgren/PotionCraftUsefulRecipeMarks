@@ -35,6 +35,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         /// </summary>
         public static void ClearFileSpecificDataOnFileLoad()
         {
+            SetupListeners();
             StaticStorage.CurrentPotionRecipeMarkInfos.Clear();
             StaticStorage.CurrentPotionState.Clear();
             StaticStorage.CurrentRecipeMarkInfo = null;

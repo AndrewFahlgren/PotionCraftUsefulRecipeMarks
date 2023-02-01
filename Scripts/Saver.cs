@@ -63,8 +63,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
         /// </summary>
         private static void LoadSaveState(SaveState loadedSaveState)
         {
-            SaveLoadService.ClearFileSpecificDataOnFileLoad();
-
             //Check to make sure it deserialized properly
             if (loadedSaveState == null)
             {
@@ -91,6 +89,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
             StaticStorage.SelectedRecipeIndex = loadedSaveState.SelectedRecipeIndex;
             StaticStorage.RecipeMarkInfos = loadedSaveState.RecipeMarkInfos;
             StaticStorage.ErrorLog = loadedSaveState.ErrorLog;
+
+            StaticStorage.ShouldLoadLastBrewState = StaticStorage.CurrentRecipeMarkInfo != null;
 
             //Update recipe book with selected recipe mark
             var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
@@ -187,6 +187,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
 
             try
             {
+                SaveLoadService.ClearFileSpecificDataOnFileLoad();
                 var stateJsonString = StateJsonString;
                 StateJsonString = null;
                 if (string.IsNullOrEmpty(stateJsonString))

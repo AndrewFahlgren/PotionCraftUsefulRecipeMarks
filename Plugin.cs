@@ -2,7 +2,9 @@
 using BepInEx.Bootstrap;
 using BepInEx.Logging;
 using HarmonyLib;
+using PotionCraftUsefulRecipeMarks.Scripts;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage;
+using System;
 using System.Linq;
 using System.Reflection;
 
@@ -17,6 +19,13 @@ namespace PotionCraftUsefulRecipeMarks
         public const string PLUGIN_VERSION = "1.0.5.1";
 
         public static ManualLogSource PluginLogger {get; private set; }
+
+        public static void LogInfo(string message) => PluginLogger.LogInfo(message);
+        public static void LogError(string message)
+        {
+            PluginLogger.LogError(message);
+            Ex.SaveErrorMessage(message);
+        }
 
         private void Awake()
         {

@@ -287,6 +287,12 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                     var grindPercent = fixedHintTimeline.GrindPercent;
                     var ingredient = Ingredient.GetByName(ingredientName);
 
+                    if (ingredient == null)
+                    {
+                        Plugin.LogError($"Error reconstructing path at index {index}. Ingredient ({ingredientName}) is null!");
+                        return null;
+                    }
+
                     Managers.RecipeMap.path.potionComponentHintPainter.ShowIngredientHint(false, 0.0f, dummyInteractionObject, ingredient, grindPercent);
                     Managers.RecipeMap.path.AddCurrentPathToFixedPath(ingredient);
                 }

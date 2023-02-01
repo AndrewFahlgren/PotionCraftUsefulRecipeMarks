@@ -105,6 +105,15 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void ResetPotion()
         {
+            Plugin.PluginLogger.LogMessage($"ResetPotion - {StaticStorage.ShouldLoadLastBrewState} - {StaticStorage.CurrentPotionRecipeMarkInfos != null} - {StaticStorage.CurrentPotionState != null}");
+            if (StaticStorage.ShouldLoadLastBrewState)
+            {
+                StaticStorage.ShouldLoadLastBrewState = false;
+                if (StaticStorage.CurrentPotionRecipeMarkInfos != null && StaticStorage.CurrentPotionState != null) return;
+            }
+
+            Plugin.PluginLogger.LogMessage($"ResetPotion - 1");
+
             if (Managers.Potion.potionCraftPanel.potionChangedAfterSavingRecipe)
             {
                 //This will commit the last recorded mark info
@@ -125,7 +134,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void SetupInitialInfo()
         {
-            SaveLoadService.SetupListeners(); //TODO move to a more appropriate spot
+            Plugin.PluginLogger.LogMessage("SetupInitialInfo");
             StaticStorage.CurrentPotionState = new();
             RecordPositionInfo();
             SetupCurrentPotionState(false);

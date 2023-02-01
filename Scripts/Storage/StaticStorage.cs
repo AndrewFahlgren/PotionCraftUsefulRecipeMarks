@@ -21,6 +21,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
 
         public static Dictionary<int, Dictionary<int, RecipeMarkInfo>> RecipeMarkInfos = new();
 
+        public static bool ShouldLoadLastBrewState;
+
         #region Old bookmark organizer failsafe fields
 
         public static bool BookmarkOrganizerOldVersionInstalled;
