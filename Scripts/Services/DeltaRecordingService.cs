@@ -32,7 +32,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         public static void SetupInitialInfoForRecipe(RecipeBookRightPageContent rightPageContent)
         {
             var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
-            SetupInitialInfoForRecipe(rightPageContent.currentPotion.potionFromPanel, recipeIndex);
+            SetupInitialInfoForRecipe(rightPageContent.pageContentPotion.potionFromPanel, recipeIndex);
         }
 
         public static void SetupInitialInfoForRecipe(SerializedPotionFromPanel potionFromPanel, int recipeIndex)
@@ -612,7 +612,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 DeltaProperty.IndicatorTargetPosition => new ModifyDelta<(float x, float y)>
                 {
                     Property = DeltaProperty.IndicatorTargetPosition,
-                    NewValue = Managers.RecipeMap.indicator.targetPosition.ToTuple()
+                    NewValue = ((Vector2)Traverse.Create(Managers.RecipeMap.indicator).Field("targetPosition").GetValue()).ToTuple()
                 },
                 DeltaProperty.FollowButtonTargetPosition => new ModifyDelta<(float x, float y)>
                 {
