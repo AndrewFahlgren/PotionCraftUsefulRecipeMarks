@@ -1,6 +1,6 @@
 ﻿{
   "name": "Brew_From_Here",
-  "version_number": "1.1.0",
+  "version_number": "1.1.1",
   "website_url": "https://github.com/AndrewFahlgren/PotionCraftUsefulRecipeMarks",
   "description": "A mod that allows you to continue brewing from any recipe mark! Compatible with Potion Craft v1.1!",
   "dependencies": [

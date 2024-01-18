@@ -6,6 +6,7 @@ using PotionCraft.ObjectBased.UIElements;
 using PotionCraft.ObjectBased.UIElements.Bookmarks;
 using PotionCraft.ObjectBased.UIElements.Books;
 using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
+using PotionCraft.ScriptableObjects;
 using PotionCraft.ScriptableObjects.Potion;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage;
 using System.Collections.Generic;
@@ -66,6 +67,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             //Update page with reconstructed recipe
             var leftPage = Managers.Potion.recipeBook.curlPageController.frontLeftPage;
             var rightPage = Managers.Potion.recipeBook.curlPageController.frontRightPage;
+           // recipe.potionFromPanel.potionSkinSettings.currentIconName = Icon.allIcons.First().name;
             leftPage.UpdatePageContent(PageContent.State.Filled, recipe);
             rightPage.UpdatePageContent(PageContent.State.Filled, recipe);
 
