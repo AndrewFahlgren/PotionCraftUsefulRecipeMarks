@@ -9,12 +9,12 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
 {
     public class CommitRecipeMarkInfoForSavedRecipePatch
     {
-        [HarmonyPatch(typeof(SaveRecipeButton), "OnButtonReleasedPointerInside")]
+        [HarmonyPatch(typeof(SavePotionRecipeButton), "OnButtonReleasedPointerInside")]
         public class SaveRecipeButton_OnButtonReleasedPointerInside
         {
             static void Prefix()
             {
-                Ex.RunSafe(() => DeltaRecordingService.CommitRecipeMarkInfoForSavedRecipe());
+                Ex.RunSafe(DeltaRecordingService.CommitRecipeMarkInfoForSavedRecipe);
             }
         }
     }

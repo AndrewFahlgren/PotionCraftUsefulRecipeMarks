@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using PotionCraft.ManagersSystem;
 using PotionCraft.ScriptableObjects.Potion;
+using PotionCraftUsefulRecipeMarks.Scripts.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +25,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.RecipeBookUI
         /// </summary>
         private static void CopyImportantInfoToPotionInstance(Potion copyTo, Potion copyFrom)
         {
-            CopyImportantInfoToPotionInstance(copyTo, copyFrom, copyFrom.potionFromPanel);
+            CopyImportantInfoToPotionInstance(copyTo, copyFrom, copyFrom.GetRecipeData());
         }
 
         /// <summary>
@@ -32,12 +33,12 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.RecipeBookUI
         /// This method copies important information to the potion that is normally lost unless the potion is saved as a recipe
         /// This is important so we can use the potion just like a recipe later
         /// </summary>
-        private static void CopyImportantInfoToPotionInstance(Potion copyTo, Potion copyFromPotion, SerializedPotionFromPanel copyFrom)
+        private static void CopyImportantInfoToPotionInstance(Potion copyTo, Potion copyFromPotion, SerializedPotionRecipeData copyFrom)
         {
-            var recipeMarks = copyTo.potionFromPanel.recipeMarks;
+            var recipeMarks = copyTo.GetRecipeData().recipeMarks;
             recipeMarks.Clear();
             copyFrom.recipeMarks.ForEach(m => recipeMarks.Add(m.Clone()));
-            copyTo.potionFromPanel.collectedPotionEffects.Clear();
+            copyTo.GetRecipeData().collectedPotionEffects.Clear();
             foreach (var collectedPotionEffect in copyFromPotion?.Effects ?? Managers.Potion.collectedPotionEffects)
             {
                 if (collectedPotionEffect == null)
