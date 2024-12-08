@@ -2,9 +2,11 @@
 using Newtonsoft.Json;
 using PotionCraft.ManagersSystem;
 using PotionCraft.ManagersSystem.SaveLoad;
+using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.PathMapItem;
 using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraft.SaveFileSystem;
 using PotionCraft.SaveLoadSystem;
+using PotionCraftUsefulRecipeMarks.Scripts.Json;
 using PotionCraftUsefulRecipeMarks.Scripts.Services;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta;
@@ -203,7 +205,17 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
                 }
 
                 //Deserialize the bookmark groups from json using our dummy class
-                var deserialized = JsonConvert.DeserializeObject<Deserialized<SaveState>>(stateJsonString, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, TypeNameHandling = TypeNameHandling.Auto });
+                INamespaceMigration[] namespaceMigrations =
+                [
+                    new BasicNamespaceMigration
+                    {
+                        FromAssembly = "PotionCraftBrewFromHere",
+                        FromType = "PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta.ModifyDelta`1[[PotionCraft.SaveLoadSystem.ProgressState+SerializedPath, PotionCraft.Scripts]]",
+                        ToType = typeof(ModifyDelta<SerializedPath>)
+                    }
+                ];
+                var serializationBinder = new NamespaceMigrationSerializationBinder(namespaceMigrations);
+                var deserialized = JsonConvert.DeserializeObject<Deserialized<SaveState>>(stateJsonString, new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, TypeNameHandling = TypeNameHandling.Auto, SerializationBinder = serializationBinder });
 
                 LoadSaveState(deserialized.DeserializedObject);
 
