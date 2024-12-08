@@ -174,9 +174,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             StaticStorage.SelectedRecipeMarkIndex = markCount - 1;
             StaticStorage.SelectedRecipeIndex = recipeIndex;
             var recipeController = Traverse.Create(rightPageContent).Field<RecipeBookRightPageRecipePanelController>("recipePanelController").Value;
-            Traverse.Create(recipeController).Field("previousScrollViewContentYPosition").SetValue(-1f);
-            recipeController.OnLateUpdate();
-            //Traverse.Create(recipeController).Method("UpdatePotionRecipe").GetValue();
+
+            Traverse.Create(recipeController).Method("ClearRecipe").GetValue();
+            Traverse.Create(recipeController).Method("UpdatePotionRecipe").GetValue();
         }
 
         private static void DisableRecipeWaypointsUIElements(RecipeBookRightPageContent rightPageContent)
