@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PotionCraft.ScriptableObjects.Potion;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -20,6 +21,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
         public static Vector2 ToVector(this (float x, float y) tuple)
         {
             return new Vector2(tuple.x, tuple.y);
+        }
+        public static SerializedPotionRecipeData GetRecipeData(this Potion potion)
+        {
+            return (SerializedPotionRecipeData)potion.GetSerializedRecipeData();
         }
     }
 }

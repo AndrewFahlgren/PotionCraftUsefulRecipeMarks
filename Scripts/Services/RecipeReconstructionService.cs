@@ -1,8 +1,11 @@
 ﻿using HarmonyLib;
 using Newtonsoft.Json;
 using PotionCraft.ManagersSystem;
+using PotionCraft.ManagersSystem.Potion.Entities;
 using PotionCraft.ManagersSystem.RecipeMap;
 using PotionCraft.ObjectBased.RecipeMap.Path;
+using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.PathMapItem;
+using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraft.SaveLoadSystem;
 using PotionCraft.ScriptableObjects;
 using PotionCraft.ScriptableObjects.Ingredient;
@@ -30,10 +33,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         {
             if (!StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex)) return null;
 
-            var recipeToClone = Managers.Potion.recipeBook.savedRecipes[recipeIndex];
+            var recipeToClone = (Potion)RecipeBook.Instance.savedRecipes[recipeIndex];
 
             //Do not clone the recipe if the last mark is selected. Instead return the original recipe;
-            if (recipeToClone.potionFromPanel.recipeMarks.Count - 1 == recipeMarkIndex)
+            if (recipeToClone.GetRecipeData().recipeMarks.Count - 1 == recipeMarkIndex)
             {
                 return recipeToClone;
             }
@@ -180,11 +183,11 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                             };
                             reconstructionTimeline.FixedHintTimelines[addDelta.Index] = fixedHintTimeline;
                         }
-                        fixedHintTimeline.AddInformationFromDeltas(recipeToClone.potionFromPanel.recipeMarks, i, addDelta.Deltas);
+                        fixedHintTimeline.AddInformationFromDeltas(recipeToClone.GetRecipeData().recipeMarks, i, addDelta.Deltas);
                     }
                 });
 
-                reconstructionTimeline.AddBasePropertyInformationFromDeltas(recipeToClone.potionFromPanel.recipeMarks, i, curRecipeMarkDeltas.Deltas);
+                reconstructionTimeline.AddBasePropertyInformationFromDeltas(recipeToClone.GetRecipeData().recipeMarks, i, curRecipeMarkDeltas.Deltas);
 
                 //Fix our index manipulation from earlier
                 if (i == oldRecipeIndex) i = 0;
@@ -205,29 +208,30 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             //DebugLogObject(potionState);
             //DebugLogObject(reconstructionTimeline);
 
-            var newRecipe = recipeToClone.Clone();
+            var newRecipe = (Potion)recipeToClone.Clone();
+            var newRecipeRecipeData = newRecipe.GetRecipeData();
 
             //Setup used components
             //Sort indexes from high to low for efficient searching
             var deltaUsedComponents = (ListDelta)potionState[DeltaProperty.UsedComponents];
             deltaUsedComponents.AddDeltas.Sort(SortAddDeltasByIndexDesc);
-            for (var i = newRecipe.usedComponents.Count - 1; i > 0; i--)
+            for (var i = newRecipe.usedComponents.GetComponentsIndexesCount() - 1; i > 0; i--)
             {
                 var correspondingDelta = deltaUsedComponents.AddDeltas.FirstOrDefault(d => d.Index == i);
                 if (correspondingDelta == null)
                 {
-                    newRecipe.usedComponents.RemoveAt(i);
+                    newRecipe.usedComponents.GetSummaryComponents().RemoveAt(i);
                     continue;
                 }
                 var ammountDelta = (ModifyDelta<int>)correspondingDelta.Deltas.First(d => d.Property == DeltaProperty.UsedComponent_Ammount);
-                newRecipe.usedComponents[i].amount = ammountDelta.NewValue;
+                Traverse.Create(newRecipe.usedComponents.GetSummaryComponents()[i]).Property("Amount").SetValue(ammountDelta.NewValue);
             }
-            newRecipe.potionFromPanel.potionUsedComponents.Clear();
-            newRecipe.usedComponents.ForEach(component => newRecipe.potionFromPanel.potionUsedComponents.Add(new SerializedUsedComponent()
+            newRecipeRecipeData.usedComponents.components.Clear();
+            newRecipe.usedComponents.GetSummaryComponents().ForEach(component => newRecipeRecipeData.usedComponents.components.Add(new SerializedAlchemySubstanceComponent()
             {
-                componentName = component.componentObject.name,
-                componentAmount = component.amount,
-                componentType = component.componentType.ToString()
+                name = component.Component.name,
+                amount = component.Amount,
+                type = component.Type.ToString()
             }));
 
             //Sort the fixed hints deltas
@@ -249,7 +253,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             //Reset the path information so we can start from a fresh slate
             Managers.RecipeMap.path.fixedPathHints = fixedPathHints;
             Managers.RecipeMap.path.deletedGraphicsSegments = 0.0f;
-            Managers.RecipeMap.path.SetPositionOnMap(Managers.RecipeMap.currentMap.potionBaseMapItem.transform.localPosition);
+            Managers.RecipeMap.path.SetPositionOnMap(Managers.RecipeMap.currentMap.referencesContainer.potionBaseMapItem.transform.localPosition);
 
             //Handle serialized paths from old recipes. This could happen if the player continues brewing from an old recipe and then saves it post mod installation.
             if (potionState.ContainsKey(DeltaProperty.OldSerializedPath))
@@ -306,7 +310,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 if (fixedHintTimeline == null) continue;
 
                 //Run through all path events in order to manipulate the path correctly
-                var deletionEvents = reconstructionTimeline.GetPathDeletionEvents(recipeToClone.potionFromPanel.recipeMarks, index);
+                var deletionEvents = reconstructionTimeline.GetPathDeletionEvents(recipeToClone.GetRecipeData().recipeMarks, index);
                 var maxDeletionIndex = deletionEvents.Any() ? deletionEvents.Max(d => d.index) : -1;
                 var rotationEvents = reconstructionTimeline.GetRotationEventsForFixedHint(index);
                 var maxRotationIndex = rotationEvents.Any() ? rotationEvents.Max(d => d.index) : -1;
@@ -356,7 +360,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             var serializedPath = SerializedPath.GetPathFromCurrentPotion();
 
             //Update the recipe with the new path
-            newRecipe.potionFromPanel.serializedPath = serializedPath;
+            newRecipeRecipeData.serializedPath = serializedPath;
 
             UnityEngine.Object.Destroy(dummyInteractionObject);
             fixedPathHints.ForEach(fh => fh.DestroyPath());
@@ -374,17 +378,17 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 switch (propertyDelta.Key)
                 {
                     case DeltaProperty.IndicatorPosition:
-                        newRecipe.potionFromPanel.serializedPath.indicatorPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
+                        newRecipeRecipeData.serializedPath.indicatorPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
                         break;
                     case DeltaProperty.PathPosition:
                         var pathPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
-                        newRecipe.potionFromPanel.serializedPath.pathPosition = pathPosition;
+                        newRecipeRecipeData.serializedPath.pathPosition = pathPosition;
 
                         if (deltaFixedHints.AddDeltas.Any())
                         {
                             if (offset != Vector3.zero)
                             {
-                                newRecipe.potionFromPanel.serializedPath.fixedPathPoints.ForEach(point =>
+                                newRecipeRecipeData.serializedPath.fixedPathPoints.ForEach(point =>
                                 {
                                     point.graphicsPoints = point.graphicsPoints.Select(p => p + offset).ToList();
                                     point.physicsPoints = point.physicsPoints.Select(p => p + offset).ToList();
@@ -394,38 +398,38 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                         }
                         else
                         {
-                            newRecipe.potionFromPanel.serializedPath.fixedPathPoints.Add(new SerializedPathPoints
+                            newRecipeRecipeData.serializedPath.fixedPathPoints.Add(new SerializedPathPoints
                             {
-                                graphicsPoints = new List<Vector3> { -newRecipe.potionFromPanel.serializedPath.pathPosition },
-                                physicsPoints = new List<Vector3> { -newRecipe.potionFromPanel.serializedPath.pathPosition },
+                                graphicsPoints = new List<Vector3> { -newRecipeRecipeData.serializedPath.pathPosition },
+                                physicsPoints = new List<Vector3> { -newRecipeRecipeData.serializedPath.pathPosition },
                                 pathEndParameters = new PathEndParameters { spriteIndex = 2 },
                                 pathStartParameters = new PathEndParameters { spriteIndex = 2 }
                             });
                         }
                         break;
                     case DeltaProperty.IndicatorTargetPosition:
-                        newRecipe.potionFromPanel.serializedPath.indicatorTargetPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
+                        newRecipeRecipeData.serializedPath.indicatorTargetPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
                         break;
                     case DeltaProperty.FollowButtonTargetPosition:
-                        newRecipe.potionFromPanel.serializedPath.followButtonTargetObjectPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
+                        newRecipeRecipeData.serializedPath.followButtonTargetObjectPosition = ((ModifyDelta<(float x, float y)>)propertyDeltaValue).NewValue.ToVector();
                         break;
                     case DeltaProperty.Rotation:
-                        newRecipe.potionFromPanel.serializedPath.indicatorRotationValue = ((ModifyDelta<float>)propertyDeltaValue).NewValue;
+                        newRecipeRecipeData.serializedPath.indicatorRotationValue = ((ModifyDelta<float>)propertyDeltaValue).NewValue;
                         break;
                     case DeltaProperty.Health:
                         var newHealth = ((ModifyDelta<float>)propertyDeltaValue).NewValue;
                         if (newHealth > 0.01f)
                         {
-                            newRecipe.potionFromPanel.serializedPath.health = newHealth;
+                            newRecipeRecipeData.serializedPath.health = newHealth;
                         }
                         break;
                     case DeltaProperty.Effects:
                         var effectsList = ((ModifyDelta<List<string>>)propertyDeltaValue).NewValue;
                         newRecipe.Effects = effectsList.Select(e => PotionEffect.GetByName(e)).ToArray();
-                        newRecipe.potionFromPanel.collectedPotionEffects = effectsList.ToList();
+                        newRecipeRecipeData.collectedPotionEffects = effectsList.ToList();
                         break;
                     case DeltaProperty.PathDeletedSegments:
-                        newRecipe.potionFromPanel.serializedPath.deletedGraphicsSegments = ((ModifyDelta<float>)propertyDeltaValue).NewValue;
+                        newRecipeRecipeData.serializedPath.deletedGraphicsSegments = ((ModifyDelta<float>)propertyDeltaValue).NewValue;
                         break;
                 }
             });

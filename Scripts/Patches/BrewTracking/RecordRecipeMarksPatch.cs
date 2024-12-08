@@ -51,7 +51,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
             }
         }
 
-        [HarmonyPatch(typeof(PotionUsedComponent), "AddToList")]
+        [HarmonyPatch(typeof(PotionManager), "AddPotionUsedComponent")]
         public class RecipeMarksSubManager_AddIngredientMark
         {
             static void Postfix(ScriptableObject componentObject)

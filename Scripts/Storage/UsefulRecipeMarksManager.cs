@@ -1,4 +1,5 @@
 ﻿using PotionCraft.ManagersSystem;
+using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraft.ScriptableObjects.Potion;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta;
 using System.Collections.Generic;
@@ -16,6 +17,6 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
         public Dictionary<DeltaProperty, BaseDelta> SelectedRecipePotionState => StaticStorage.SelectedRecipePotionState;
         public int SelectedRecipeMarkIndex => StaticStorage.SelectedRecipeMarkIndex;
         public int SelectedRecipeIndex => StaticStorage.SelectedRecipeIndex;
-        public List<Potion> RecipeIndexes => StaticStorage.RecipeIndexes;
+        public List<IRecipeBookPageContent> RecipeIndexes => StaticStorage.RecipeIndexes;
     }
 }

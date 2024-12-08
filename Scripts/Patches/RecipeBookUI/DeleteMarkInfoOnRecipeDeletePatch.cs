@@ -10,15 +10,16 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.RecipeBookUI
         [HarmonyPatch(typeof(RecipeBook), "EraseRecipe")]
         public class RecipeBook_EraseRecipe
         {
-            static bool Prefix(Potion potion)
+            static bool Prefix(IRecipeBookPageContent recipe)
             {
-                return Ex.RunSafe(() => DeleteMarkInfoOnRecipeDelete(potion));
+                return Ex.RunSafe(() => DeleteMarkInfoOnRecipeDelete(recipe));
             }
         }
 
-        private static bool DeleteMarkInfoOnRecipeDelete(Potion recipe)
+        private static bool DeleteMarkInfoOnRecipeDelete(IRecipeBookPageContent recipe)
         {
-            DeltaRecordingService.DeleteMarkInfoForRecipe(recipe);
+            if (recipe is not Potion potion) return true;
+            DeltaRecordingService.DeleteMarkInfoForRecipe(potion);
             return true;
         }
     }

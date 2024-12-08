@@ -14,9 +14,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.RecipeBookUI
         [HarmonyPatch(typeof(RecipeBook), "EraseRecipe")]
         public class RemoveRecipeMarkForDeletedRecipe
         {
-            static void Prefix(Potion potion)
+            static void Prefix(IRecipeBookPageContent recipe)
             {
-                Ex.RunSafe(() => RecipeBookUIService.RemoveRecipeMarkForDeletedRecipe(potion));
+                Ex.RunSafe(() => RecipeBookUIService.RemoveRecipeMarkForDeletedRecipe(recipe));
             }
         }
     }

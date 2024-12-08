@@ -62,7 +62,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches
         {
             if (!StaticStorage.BookmarkOrganizerOldVersionInstalled) return;
             if (instance.CurrentMovingState == Bookmark.MovingState.Idle) return;
-            var bookmarkController = Managers.Potion.recipeBook.bookmarkControllersGroupController.controllers[0].bookmarkController;
+            var bookmarkController = RecipeBook.Instance.bookmarkControllersGroupController.controllers[0].bookmarkController;
             if (bookmarkController.rails.Count < 8) return;
             var subRail = bookmarkController.rails[7];
             if (instance.rail != subRail)

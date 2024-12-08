@@ -1,7 +1,8 @@
 ﻿using HarmonyLib;
 using PotionCraft.ManagersSystem;
+using PotionCraft.ManagersSystem.Potion.Entities;
+using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraft.ScriptableObjects.Potion;
-using PotionCraftUsefulRecipeMarks.Scripts.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,9 +14,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.RecipeBookUI
     [HarmonyPatch(typeof(Potion), "Clone")]
     public class CopyImportantInfoToPotionInstancePotionPatch
     {
-        static void Postfix(Potion __result, Potion __instance)
+        static void Postfix(IRecipeBookPageContent __result, Potion __instance)
         {
-            Ex.RunSafe(() => CopyImportantInfoToPotionInstance(__result, __instance));
+            Ex.RunSafe(() => CopyImportantInfoToPotionInstance((Potion)__result, __instance));
         }
 
         /// <summary>
@@ -35,36 +36,38 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.RecipeBookUI
         /// </summary>
         private static void CopyImportantInfoToPotionInstance(Potion copyTo, Potion copyFromPotion, SerializedPotionRecipeData copyFrom)
         {
-            var recipeMarks = copyTo.GetRecipeData().recipeMarks;
+            var copyToRecipeData = copyTo.GetRecipeData();
+            var recipeMarks = copyToRecipeData.recipeMarks;
             recipeMarks.Clear();
             copyFrom.recipeMarks.ForEach(m => recipeMarks.Add(m.Clone()));
-            copyTo.GetRecipeData().collectedPotionEffects.Clear();
+            copyToRecipeData.collectedPotionEffects.Clear();
             foreach (var collectedPotionEffect in copyFromPotion?.Effects ?? Managers.Potion.collectedPotionEffects)
             {
                 if (collectedPotionEffect == null)
                     break;
-                copyTo.potionFromPanel.collectedPotionEffects.Add(collectedPotionEffect.name);
+                copyToRecipeData.collectedPotionEffects.Add(collectedPotionEffect.name);
             }
-            copyTo.potionFromPanel.serializedPath = copyFrom.serializedPath;
-            if (!copyTo.usedComponents?.Any() ?? false)
+            copyToRecipeData.serializedPath = copyFrom.serializedPath;
+            if (!copyTo.usedComponents?.GetSummaryComponents()?.Any() ?? false)
             {
-                if (copyTo.usedComponents == null) copyTo.usedComponents = new List<PotionUsedComponent>();
-                copyTo.usedComponents = Managers.Potion.usedComponents.Select(component => component.Clone()).ToList();
+                copyTo.usedComponents.Clear();
+                var toAdd = Managers.Potion.PotionUsedComponents.GetSummaryComponents().Select(component => component.Clone()).ToList();
+                toAdd.ForEach(uc => copyTo.usedComponents.Add(uc));
             }
-            if (!copyFrom.potionUsedComponents.Any())
+            if (!copyFrom.usedComponents.components.Any())
             {
-                copyTo.usedComponents.ForEach((component) =>
+                copyTo.usedComponents.GetSummaryComponents().ForEach((component) =>
                 {
-                    copyFrom.potionUsedComponents.Add(new SerializedUsedComponent
+                    copyFrom.usedComponents.components.Add(new SerializedAlchemySubstanceComponent
                     {
-                        componentName = component.componentObject.name,
-                        componentAmount = component.amount,
-                        componentType = component.componentType.ToString()
+                        name = component.Component.name,
+                        amount = component.Amount,
+                        type = component.Type.ToString()
                     });
                 });
             }
-            copyTo.potionFromPanel.potionUsedComponents = copyFrom.potionUsedComponents;
-            copyTo.potionFromPanel.potionSkinSettings = copyFrom.potionSkinSettings;
+            copyToRecipeData.usedComponents = copyFrom.usedComponents;
+            copyToRecipeData.skinSettings = copyFrom.skinSettings;
         }
     }
 }

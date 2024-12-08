@@ -93,10 +93,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
             StaticStorage.ShouldLoadLastBrewState = StaticStorage.CurrentRecipeMarkInfo != null;
 
             //Update recipe book with selected recipe mark
-            var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
+            var recipeIndex = RecipeBook.Instance.currentPageIndex;
             if (!RecipeReconstructionService.MarkHasSavedData(recipeIndex, StaticStorage.SelectedRecipeMarkIndex))
             {
-                var rightPage = Managers.Potion.recipeBook.curlPageController.frontRightPage;
+                var rightPage = RecipeBook.Instance.curlPageController.frontRightPage;
                 var rightPageContent = (RecipeBookRightPageContent)rightPage.pageContent;
                 RecipeBookUIService.DisableOldRecipeMarks(rightPageContent);
             }
@@ -125,12 +125,12 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
             }
         }
 
-        [HarmonyPatch(typeof(SaveLoadManager), "LoadSelectedState")]
-        public class SaveLoadManager_LoadSelectedState
+        [HarmonyPatch(typeof(SaveLoadManager), "LoadProgressState")]
+        public class SaveLoadManager_LoadProgressState
         {
-            static bool Prefix(Type type)
+            static bool Prefix()
             {
-                return RetreiveStoredData(type);
+                return RetreiveStoredData();
             }
         }
 
@@ -181,10 +181,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts
         /// <summary>
         /// Reads the raw json string to find our custom field and parse any bookmark groups within it
         /// </summary>
-        public static bool RetreiveStoredData(Type type)
+        public static bool RetreiveStoredData()
         {
-            if (type != typeof(ProgressState)) return true;
-
             try
             {
                 SaveLoadService.ClearFileSpecificDataOnFileLoad();

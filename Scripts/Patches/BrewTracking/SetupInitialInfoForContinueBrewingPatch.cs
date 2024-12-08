@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using PotionCraft.ManagersSystem.Potion;
 using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
+using PotionCraft.ScriptableObjects.Potion;
 using PotionCraftUsefulRecipeMarks.Scripts.Services;
 using System;
 using static PotionCraft.SaveLoadSystem.ProgressState;
@@ -37,12 +38,12 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
             }
         }
 
-        [HarmonyPatch(typeof(SerializedPotionFromPanel), "ApplyPotionToCurrentPotion")]
+        [HarmonyPatch(typeof(PotionManager), "ApplySerializedPotionRecipeDataToCurrentPotion")]
         public class SerializedPotionFromPanel_ApplyPotionToCurrentPotion
         {
-            static void Postfix(SerializedPotionFromPanel __instance)
+            static void Postfix(SerializedPotionRecipeData serializedPotionRecipeData)
             {
-                Ex.RunSafe(() => ApplyPotionToCurrentPotionCalled(__instance));
+                Ex.RunSafe(() => ApplyPotionToCurrentPotionCalled(serializedPotionRecipeData));
             }
         }
 
@@ -60,7 +61,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Patches.BrewTracking
         }
 
         //This allows functionality with Pour Back In
-        private static void ApplyPotionToCurrentPotionCalled(SerializedPotionFromPanel potion)
+        private static void ApplyPotionToCurrentPotionCalled(SerializedPotionRecipeData potion)
         {
             if (IgnoreApplyPotionToCurrentPotion) return;
             DeltaRecordingService.SetupInitialInfoForRecipe(potion, 0);

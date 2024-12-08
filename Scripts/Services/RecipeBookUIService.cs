@@ -7,6 +7,7 @@ using PotionCraft.ObjectBased.UIElements.Bookmarks;
 using PotionCraft.ObjectBased.UIElements.Books;
 using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraft.ScriptableObjects;
+using PotionCraft.ScriptableObjects.AlchemyMachineProducts;
 using PotionCraft.ScriptableObjects.Potion;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage;
 using System.Collections.Generic;
@@ -26,12 +27,12 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         {
             if (__instance is not RecipeBookRecipeMark recipeMark) return;
 
-            var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
+            var recipeIndex = RecipeBook.Instance.currentPageIndex;
 
             var markIndex = recipeMark.currentMarkIndex;
 
             //Disable reconstruction for alchemy machine recipes
-            if (IsAlchemyMachineRecipe(Managers.Potion.recipeBook.savedRecipes[recipeIndex])) return;
+            if (IsAlchemyMachineRecipe(RecipeBook.Instance.savedRecipes[recipeIndex])) return;
 
             //Do nothing for potion base marks
             if (markIndex == 0) return;
@@ -65,18 +66,19 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             StaticStorage.SelectedRecipeIndex = recipeIndex;
 
             //Update page with reconstructed recipe
-            var leftPage = Managers.Potion.recipeBook.curlPageController.frontLeftPage;
-            var rightPage = Managers.Potion.recipeBook.curlPageController.frontRightPage;
+            var leftPage = RecipeBook.Instance.curlPageController.frontLeftPage;
+            var rightPage = RecipeBook.Instance.curlPageController.frontRightPage;
            // recipe.potionFromPanel.potionSkinSettings.currentIconName = Icon.allIcons.First().name;
-            leftPage.UpdatePageContent(PageContent.State.Filled, recipe);
-            rightPage.UpdatePageContent(PageContent.State.Filled, recipe);
+            leftPage.UpdatePageContent(PageContentState.Filled, recipe, rightPage);
+            rightPage.UpdatePageContent(PageContentState.Filled, recipe, leftPage);
 
-            var isReconstructed = recipe.potionFromPanel.recipeMarks.Count - 1 != markIndex;
+            var isReconstructed = recipe.GetRecipeData().recipeMarks.Count - 1 != markIndex;
 
             //Lock down the waypoint toggle button for reconstructed recipes if Recipe Waypoints is installed
             //Call update visual here to let recipe waypoints add the waypoint toggle button back in if needed
             var rightPageContent = (RecipeBookRightPageContent)rightPage.pageContent;
-            var brewPotionButton = (RecipeBookBrewPotionButton)Traverse.Create(rightPageContent).Field("brewPotionButton").GetValue();
+            var bottomButtonController = Traverse.Create(rightPageContent).Field<RecipeBookRightPageBottomButtonsController>("bottomButtonsController").Value;
+            var brewPotionButton = (RecipeBookBrewRecipeButton)Traverse.Create(bottomButtonController).Field("brewRecipeSoloButton").GetValue();
             brewPotionButton.UpdateVisual();
             if (isReconstructed)
             {
@@ -89,7 +91,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void EnableDisableMark(RecipeBookRecipeMark mark)
         {
-            var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
+            var recipeIndex = RecipeBook.Instance.currentPageIndex;
             if (StaticStorage.SelectedRecipeMarkIndex > 0
                 && StaticStorage.SelectedRecipeIndex == recipeIndex
                 && StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex))
@@ -135,7 +137,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             Ex.RunSafe(() =>
             {
                 if (!shown) return;
-                var currentPageIndex = Managers.Potion.recipeBook.currentPageIndex;
+                var currentPageIndex = RecipeBook.Instance.currentPageIndex;
 
                 if (StaticStorage.SelectedRecipeMarkIndex > 0
                     && StaticStorage.SelectedRecipeIndex == currentPageIndex
@@ -145,14 +147,14 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 }
                 else
                 {
-                    DisableOldRecipeMarks(Managers.Potion.recipeBook);
+                    DisableOldRecipeMarks(RecipeBook.Instance);
                 }
             });
         }
 
         public static void UpdateRecipeMarksForPageChange(int _, int _0)
         {
-            Ex.RunSafe(() => DisableOldRecipeMarks(Managers.Potion.recipeBook));
+            Ex.RunSafe(() => DisableOldRecipeMarks(RecipeBook.Instance));
         }
 
         public static void DisableOldRecipeMarks(Book book)
@@ -165,12 +167,16 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void DisableOldRecipeMarks(RecipeBookRightPageContent rightPageContent)
         {
-            if (Managers.Potion.recipeBook == null || rightPageContent?.pageContentPotion?.potionFromPanel == null) return;
-            var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
-            var markCount = rightPageContent.pageContentPotion.potionFromPanel.recipeMarks.Count;
+            var recipeData = (rightPageContent?.GetRecipeBookPageContent() as Potion)?.GetRecipeData();
+            if (RecipeBook.Instance == null || recipeData == null) return;
+            var recipeIndex = RecipeBook.Instance.currentPageIndex;
+            var markCount = recipeData.recipeMarks.Count;
             StaticStorage.SelectedRecipeMarkIndex = markCount - 1;
             StaticStorage.SelectedRecipeIndex = recipeIndex;
-            Traverse.Create(rightPageContent).Method("UpdateRecipeMarks").GetValue();
+            var recipeController = Traverse.Create(rightPageContent).Field<RecipeBookRightPageRecipePanelController>("recipePanelController").Value;
+            Traverse.Create(recipeController).Field("previousScrollViewContentYPosition").SetValue(-1f);
+            recipeController.OnLateUpdate();
+            //Traverse.Create(recipeController).Method("UpdatePotionRecipe").GetValue();
         }
 
         private static void DisableRecipeWaypointsUIElements(RecipeBookRightPageContent rightPageContent)
@@ -179,9 +185,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             waypointToggleButton?.gameObject?.SetActive(false);
         }
 
-        public static bool IsAlchemyMachineRecipe(Potion recipe)
+        public static bool IsAlchemyMachineRecipe(IRecipeBookPageContent recipe)
         {
-            return recipe.potionFromPanel.recipeMarks.Count(m => m.type == SerializedRecipeMark.Type.PotionBase) > 1;
+            return recipe is not Potion;
         }
 
         public static void BookmarksRearranged(BookmarkController _, List<int> intList)
@@ -190,7 +196,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             {
                 var oldRecipeMarkInfos = StaticStorage.RecipeMarkInfos.ToList();
                 var newRecipeMarkInfos = new List<KeyValuePair<int, Dictionary<int, RecipeMarkInfo>>>();
-                var newRecipeList = new List<Potion>();
+                var newRecipeList = new List<IRecipeBookPageContent>();
                 for (var newIndex = 0; newIndex < intList.Count; newIndex++)
                 {
                     var oldIndex = intList[newIndex];
@@ -212,9 +218,10 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             });
         }
 
-        public static void RemoveRecipeMarkForDeletedRecipe(Potion recipe)
+        public static void RemoveRecipeMarkForDeletedRecipe(IRecipeBookPageContent recipe)
         {
-            var recipeIndex = Managers.Potion.recipeBook.savedRecipes.IndexOf(recipe);
+            if (recipe is not Potion) return;
+            var recipeIndex = RecipeBook.Instance.savedRecipes.IndexOf(recipe);
             if (StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex))
             {
                 StaticStorage.RecipeMarkInfos.Remove(recipeIndex);
@@ -225,7 +232,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         {
             if (!StaticStorage.BookmarkOrganizerOldVersionInstalled) return;
 
-            var allRecipesList = Managers.Potion.recipeBook.savedRecipes;
+            var allRecipesList = RecipeBook.Instance.savedRecipes;
             var intList = new List<int>();
             var shouldRearrange = false;
             for (int i = 0; i < allRecipesList.Count; i++)

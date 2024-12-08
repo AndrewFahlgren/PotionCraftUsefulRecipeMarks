@@ -1,8 +1,10 @@
 ﻿using HarmonyLib;
 using Newtonsoft.Json;
 using PotionCraft.ManagersSystem;
+using PotionCraft.ManagersSystem.Potion.Entities;
 using PotionCraft.ObjectBased.Potion;
 using PotionCraft.ObjectBased.RecipeMap.Path;
+using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.PathMapItem;
 using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraft.ScriptableObjects.Potion;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage;
@@ -19,7 +21,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
     public static class DeltaRecordingService
     {
         public const string VoidSaltName = "Void Salt";
-        private static SerializedRecipeMark.Type? LastRecipeMarkType;
+        private static RecipeBookRecipeMarkType? LastRecipeMarkType;
 
         public static void RecordRecipeMarkInfo()
         {
@@ -31,16 +33,16 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void SetupInitialInfoForRecipe(RecipeBookRightPageContent rightPageContent)
         {
-            var recipeIndex = Managers.Potion.recipeBook.currentPageIndex;
-            SetupInitialInfoForRecipe(rightPageContent.pageContentPotion.potionFromPanel, recipeIndex);
+            var recipeIndex = RecipeBook.Instance.currentPageIndex;
+            SetupInitialInfoForRecipe(((Potion)rightPageContent.GetRecipeBookPageContent()).GetRecipeData(), recipeIndex);
         }
 
-        public static void SetupInitialInfoForRecipe(SerializedPotionFromPanel potionFromPanel, int recipeIndex)
+        public static void SetupInitialInfoForRecipe(SerializedPotionRecipeData potionFromPanel, int recipeIndex)
         {
             if (!StaticStorage.RecipeMarkInfos.TryGetValue(recipeIndex, out var recipeMarkInfos))
             {
                 //Our custom recipe breaks this initial index set so fix that here
-                Managers.Potion.recipeBook.currentPotionRecipeIndex = recipeIndex;
+                RecipeBook.Instance.currentRecipeIndexes[RecipeBookPageContentType.Potion] = recipeIndex;
 
                 SetupInitialInfo();
                 //Add the old serialized path for this pre mod recipe
@@ -81,7 +83,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void CommitRecipeMarkInfoForSavedRecipe()
         {
-            var recipeIndex = Managers.Potion.recipeBook.savedRecipes.IndexOf(null);
+            var recipeIndex = RecipeBook.Instance.savedRecipes.IndexOf(null);
 
             //This is an error case handled in game. Its best to just return here and let the game deal with the fallout
             if (recipeIndex == -1) 
@@ -152,13 +154,13 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         private static string LastRecipeMarkStringValue;
         public static void RecordRecipeMarkInfo(SerializedRecipeMark recipeMark)
         {
-            if (recipeMark?.type == SerializedRecipeMark.Type.PotionBase) return;
+            if (recipeMark?.type == RecipeBookRecipeMarkType.PotionBase) return;
 
             //If we are switching to a new recipe mark then record the data from the previous recipe mark (always do this in the case of ingredient marks)
             if (StaticStorage.CurrentRecipeMarkInfo != null && 
                 (LastRecipeMarkType != recipeMark?.type 
-                 || recipeMark?.type == SerializedRecipeMark.Type.Ingredient
-                 || (recipeMark?.type == SerializedRecipeMark.Type.Salt && recipeMark?.stringValue != LastRecipeMarkStringValue)))
+                 || recipeMark?.type == RecipeBookRecipeMarkType.Ingredient
+                 || (recipeMark?.type == RecipeBookRecipeMarkType.Salt && recipeMark?.stringValue != LastRecipeMarkStringValue)))
             {
                 //We avoid comparisions for position info to save time
                 //Check to see if anything has changed here
@@ -187,17 +189,17 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
             switch (recipeMark.type)
             {
-                case SerializedRecipeMark.Type.Spoon:
+                case RecipeBookRecipeMarkType.Spoon:
                     RecordPositionInfo();
                     RecordMoveAlongPathInfo();
                     break;
-                case SerializedRecipeMark.Type.Ladle:
+                case RecipeBookRecipeMarkType.Ladle:
                     RecordPositionInfo();
                     break;
-                case SerializedRecipeMark.Type.Bellows:
+                case RecipeBookRecipeMarkType.Bellows:
                     RecordEffectInfo();
                     break;
-                case SerializedRecipeMark.Type.Salt:
+                case RecipeBookRecipeMarkType.Salt:
                     RecordPositionInfo();
                     RecordUsedComponentInfo(recipeMark.stringValue);
 
@@ -212,7 +214,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                         RecordConnectionPointInfo();
                     }
                     break;
-                case SerializedRecipeMark.Type.Ingredient:
+                case RecipeBookRecipeMarkType.Ingredient:
                     RecordNewIngredientInfo(recipeMark.stringValue);
                     break;
             }
@@ -376,14 +378,15 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         private static void RecordUsedComponentInfo(string usedComponentName)
         {
-            var usedComponent = Managers.Potion.usedComponents.FirstOrDefault(c => c.componentObject.name == usedComponentName);
+            var usedComponentList = Managers.Potion.PotionUsedComponents.GetSummaryComponents();
+            var usedComponent = usedComponentList.FirstOrDefault(c => c.Component.name == usedComponentName);
 
             if (usedComponent == null)
             {
                 throw new ArgumentException($"Cannot record new used component info for {usedComponentName}. Used component not found in usedComponents list");
             }
 
-            RecordListObjectInfo(DeltaProperty.UsedComponents, usedComponent, Managers.Potion.usedComponents.IndexOf(usedComponent));
+            RecordListObjectInfo(DeltaProperty.UsedComponents, usedComponent, usedComponentList.IndexOf(usedComponent));
         }
 
         private static void RecordNewListAddInfo<T>(DeltaProperty property, List<T> sourceList, int indexOverride = -1)
@@ -450,7 +453,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             return new ListDelta
             {
                 Property = DeltaProperty.UsedComponents,
-                AddDeltas = Managers.Potion.usedComponents.Select((u, i) => GetBaseAddDelta(u, i)).Where(d => d != null).ToList(),
+                AddDeltas = Managers.Potion.PotionUsedComponents.GetSummaryComponents().Select((u, i) => GetBaseAddDelta(u, i)).Where(d => d != null).ToList(),
             };
         }
         private static ListDelta GetFixedHintsProperty()
@@ -468,7 +471,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
             var propertyEnum = obj switch
             {
-                PotionUsedComponent => 
+                AlchemySubstanceComponent => 
                     DeltaProperty.UsedComponents,
                 FixedHint => 
                     DeltaProperty.FixedHints,
@@ -496,7 +499,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
             var objectProperties = obj switch
             {
-                PotionUsedComponent => 
+                AlchemySubstanceComponent => 
                     new List<DeltaProperty> { DeltaProperty.UsedComponent_Ammount },
                 FixedHint => 
                     new List<DeltaProperty> 
@@ -517,7 +520,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
                 DeltaProperty.UsedComponent_Ammount => new ModifyDelta<int>
                 {
                     Property = DeltaProperty.UsedComponent_Ammount,
-                    NewValue = ((PotionUsedComponent)obj).amount
+                    NewValue = ((AlchemySubstanceComponent)obj).Amount
                 },
                 DeltaProperty.FixedHint_ConnectionPoint => new ModifyDelta<(float x, float y)>
                 {
@@ -662,7 +665,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
 
         public static void DeleteMarkInfoForRecipe(Potion recipe)
         {
-            var recipeIndex = Managers.Potion.recipeBook.savedRecipes.IndexOf(recipe);
+            var recipeIndex = RecipeBook.Instance.savedRecipes.IndexOf(recipe);
             if (!StaticStorage.RecipeMarkInfos.ContainsKey(recipeIndex)) return;
             StaticStorage.RecipeMarkInfos.Remove(recipeIndex);
         }

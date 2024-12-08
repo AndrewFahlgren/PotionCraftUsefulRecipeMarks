@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using PotionCraft.ManagersSystem;
+using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraft.SaveFileSystem;
 using PotionCraft.SaveLoadSystem;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage;
@@ -23,9 +24,9 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             {
                 StaticStorage.AddedListeners = true;
                 Managers.Potion.gameObject.AddComponent<UsefulRecipeMarksManager>();
-                Managers.Potion.recipeBook.bookmarkControllersGroupController.onBookmarksRearranged.AddListener(RecipeBookUIService.BookmarksRearranged);
-                Managers.Potion.recipeBook.onPageChanged.AddListener(RecipeBookUIService.UpdateRecipeMarksForPageChange);
-                Managers.Potion.recipeBook.onActiveStateChanged.AddListener(RecipeBookUIService.UpdateRecipeMarksForStateChanged);
+                RecipeBook.Instance.bookmarkControllersGroupController.onBookmarksRearranged.AddListener(RecipeBookUIService.BookmarksRearranged);
+                RecipeBook.Instance.onPageChanged.AddListener(RecipeBookUIService.UpdateRecipeMarksForPageChange);
+                RecipeBook.Instance.onActiveStateChanged.AddListener(RecipeBookUIService.UpdateRecipeMarksForStateChanged);
                 Managers.Potion.potionCraftPanel.onPotionUpdated.AddListener(DeltaRecordingService.ClearPreviousSavedPotionRecipeMarkInfo);
             }
         }
@@ -49,7 +50,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
         public static void UpdateFailsafeListOnLoad()
         {
             if (!StaticStorage.BookmarkOrganizerOldVersionInstalled) return;
-            StaticStorage.RecipeIndexes = Managers.Potion.recipeBook.savedRecipes.ToList();
+            StaticStorage.RecipeIndexes = [.. RecipeBook.Instance.savedRecipes];
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using PotionCraft.ScriptableObjects.Potion;
+﻿using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
+using PotionCraft.ScriptableObjects.Potion;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta;
 using System.Collections.Generic;
 
@@ -26,7 +27,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
         #region Old bookmark organizer failsafe fields
 
         public static bool BookmarkOrganizerOldVersionInstalled;
-        public static List<Potion> RecipeIndexes;
+        public static List<IRecipeBookPageContent> RecipeIndexes;
 
         #endregion
     }

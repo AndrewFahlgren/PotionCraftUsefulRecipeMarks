@@ -1,4 +1,5 @@
 ﻿using PotionCraft.ObjectBased.Potion;
+using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraftUsefulRecipeMarks.Scripts.Services;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta;
 using System;
@@ -20,7 +21,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
         public void AddInformationFromDeltas(List<SerializedRecipeMark> recipeMarks, int recipeMarkIndex, List<ModifyDelta> deltas)
         {
             var recipeMark = recipeMarks[recipeMarkIndex];
-            if (recipeMark.type == SerializedRecipeMark.Type.Ingredient)
+            if (recipeMark.type == RecipeBookRecipeMarkType.Ingredient)
             {
                 IngredientName = recipeMark.stringValue;
                 GrindPercent = recipeMark.floatValue;

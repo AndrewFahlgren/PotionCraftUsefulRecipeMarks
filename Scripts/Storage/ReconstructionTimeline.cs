@@ -1,4 +1,5 @@
 ﻿using PotionCraft.ObjectBased.Potion;
+using PotionCraft.ObjectBased.UIElements.Books.RecipeBook;
 using PotionCraftUsefulRecipeMarks.Scripts.Services;
 using PotionCraftUsefulRecipeMarks.Scripts.Storage.Delta;
 using System;
@@ -56,7 +57,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Storage
                                     }
 
                                     var eventRecipeMark = allRecipeMarks[prt.Key];
-                                    var deleteFromEnd = eventRecipeMark.type == SerializedRecipeMark.Type.Salt && eventRecipeMark.stringValue == DeltaRecordingService.VoidSaltName;
+                                    var deleteFromEnd = eventRecipeMark.type == RecipeBookRecipeMarkType.Salt && eventRecipeMark.stringValue == DeltaRecordingService.VoidSaltName;
                                     var deletedLength = currentLength - lengthDelta.NewValue;
                                     //Plugin.PluginLogger.LogMessage($"GetPathDeletionEvents for fixedHintIndex={fixedHintIndex}, deletedLength={deletedLength}");
                                     if (deletedLength < 0)
