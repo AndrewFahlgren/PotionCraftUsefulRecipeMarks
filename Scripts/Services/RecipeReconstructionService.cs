@@ -217,7 +217,7 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             deltaUsedComponents.AddDeltas.Sort(SortAddDeltasByIndexDesc);
             for (var i = newRecipe.usedComponents.GetComponentsIndexesCount() - 1; i > 0; i--)
             {
-                var correspondingDelta = deltaUsedComponents.AddDeltas.FirstOrDefault(d => d.Index == i);
+                var correspondingDelta = deltaUsedComponents.AddDeltas.FirstOrDefault(d => d.Index == i); //TODO has this changed so that adding two of the same ingredient creates two marks instead of just one with an ammount??
                 if (correspondingDelta == null)
                 {
                     newRecipe.usedComponents.GetSummaryComponents().RemoveAt(i);
