@@ -1,5 +1,5 @@
 # Brew From Here
-A mod that lets you continue brewing from any recipe mark! Compatible with Potion Craft v1.1!
+A mod that lets you continue brewing from any recipe mark! Compatible with Potion Craft v2.0!
 
 NOTE: this only works with newly saved recipes. Pre-mod recipes will not have this functionality. This is because not enough information is currently stored to recreate a recipe and new information must be gathered while brewing.
 
@@ -40,8 +40,6 @@ See [this guide](https://docs.google.com/document/d/1Y3PDeMaffkh7x4U3j46YZ9K6AhM
 
 ## Other Mods
 I am making a series of mods which make recipes easier to use. All of these mods are intended to be balanced and feel like part of the base game:
-
-[Alchemy Machine Recipes](https://potion-craft.thunderstore.io/package/AndrewFahlgren/Alchemy_Machine_Recipes/) - Enables the save recipe button when making things with the alchemy machine. Make legendary stones and salts with the click of a button!
 
 [Recipe Waypoints](https://potion-craft.thunderstore.io/package/AndrewFahlgren/Recipe_Waypoints/) - Allows you to see where your waypoint recipes (those with no effects or are far away from their last effect) are on the map so you know where you are going when you continue brewing from that recipe.
 
