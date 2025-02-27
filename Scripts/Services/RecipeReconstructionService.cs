@@ -209,7 +209,8 @@ namespace PotionCraftUsefulRecipeMarks.Scripts.Services
             //DebugLogObject(reconstructionTimeline);
 
             var newRecipe = (Potion)recipeToClone.Clone();
-            var newRecipeRecipeData = newRecipe.GetRecipeData();
+            var newRecipeRecipeData = (SerializedPotionRecipeData)newRecipe.GetRecipeData().Clone();
+            Traverse.Create(newRecipe).Field("recipeData").SetValue(newRecipeRecipeData);
 
             //Setup used components
             //Sort indexes from high to low for efficient searching
